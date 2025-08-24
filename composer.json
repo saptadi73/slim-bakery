@@ -1,0 +1,16 @@
+{
+    "require": {
+        "slim/slim": "^4.14",
+        "illuminate/database": "^12.25",
+        "slim/psr7": "^1.7",
+        "firebase/php-jwt": "^6.11"
+    },
+    "autoload": {
+        "psr-4": {
+    "App\\": "app/",
+    "App\\Middleware\\": "app/Middleware/",
+    "App\\Model\\": "app/Model/",
+    "App\\Support\\": "app/Support/"
+        }
+    }
+}
