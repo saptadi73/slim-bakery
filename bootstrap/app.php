@@ -3,7 +3,14 @@ use Slim\Factory\AppFactory;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use App\Middleware\CorsMiddleware;
 
+
 require __DIR__ . '/../vendor/autoload.php';
+
+// Load .env
+if (file_exists(__DIR__ . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+    $dotenv->load();
+}
 
 $app = AppFactory::create();
 $app->add(new CorsMiddleware());

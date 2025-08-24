@@ -1,14 +1,20 @@
 <?php
+
 namespace App\Service;
 
 use App\Model\User;
 use Firebase\JWT\JWT;
 
-class AuthService {
-    public static function login($email, $password) {
+class AuthService
+{
+    public static function login($email, $password)
+    {
         $user = User::where('email', $email)->first();
         if ($user && password_verify($password, $user->password)) {
-            $key = 'minierp2025';
+            $key = $_ENV['JWT_SECRET'] ?? null;
+            if (!$key) {
+                throw new \Exception('JWT_SECRET not set in environment');
+            }
             $payload = [
                 'sub' => $user->id,
                 'name' => $user->name,
@@ -29,7 +35,8 @@ class AuthService {
         ];
     }
 
-    public static function register($name, $email, $password) {
+    public static function register($name, $email, $password)
+    {
         $user = User::create([
             'name' => $name,
             'email' => $email,
