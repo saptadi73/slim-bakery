@@ -46,4 +46,24 @@ return function (App $app) {
         }
         return JsonResponder::success($response, [], 'Logout success');
     })->add(new JwtMiddleware());
+
+    $app->post('/user/update/{id}', function ($request, $response, $args) {
+        $id = $args['id'];
+        $data = RequestHelper::getJsonBody($request);
+        $user = UserService::update($id, $data);
+        if ($user) {
+            return JsonResponder::success($response, $user, 'User updated');
+        }
+        return JsonResponder::error($response, 'User not found', 404);
+    })->add(new JwtMiddleware());
+
+    $app->post('/user/delete/{id}', function ($request, $response, $args) {
+        $id = $args['id'];
+        $deleted = UserService::delete($id);
+        if ($deleted) {
+            return JsonResponder::success($response, [], 'User deleted');
+        }
+        return JsonResponder::error($response, 'User not found', 404);
+    })->add(new JwtMiddleware());
 };
+

@@ -19,4 +19,22 @@ class UserService {
             'password' => password_hash($password, PASSWORD_DEFAULT)
         ]);
     }
+
+    public static function update($id, $data) {
+        $user = self::findById($id);
+        if ($user) {
+            $user->update($data);
+            return $user;
+        }
+        return null;
+    }
+
+    public static function delete($id) {
+        $user = self::findById($id);
+        if ($user) {
+            return $user->delete();
+        }
+        return false;
+    }
+
 }
