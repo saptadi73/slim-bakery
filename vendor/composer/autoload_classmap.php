@@ -8,6 +8,7 @@ $baseDir = dirname($vendorDir);
 return array(
     'App\\Middleware\\CorsMiddleware' => $baseDir . '/app/Middleware/CorsMiddleware.php',
     'App\\Middleware\\JwtMiddleware' => $baseDir . '/app/Middleware/JwtMiddleware.php',
+    'App\\Model\\Role' => $baseDir . '/app/Model/Role.php',
     'App\\Model\\User' => $baseDir . '/app/Model/User.php',
     'App\\Service\\AuthService' => $baseDir . '/app/Service/AuthService.php',
     'App\\Service\\UserService' => $baseDir . '/app/Service/UserService.php',

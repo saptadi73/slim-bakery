@@ -250,6 +250,7 @@ class ComposerStaticInitc0d7893a557a5ce10d6810b5c1d421b6
     public static $classMap = array (
         'App\\Middleware\\CorsMiddleware' => __DIR__ . '/../..' . '/app/Middleware/CorsMiddleware.php',
         'App\\Middleware\\JwtMiddleware' => __DIR__ . '/../..' . '/app/Middleware/JwtMiddleware.php',
+        'App\\Model\\Role' => __DIR__ . '/../..' . '/app/Model/Role.php',
         'App\\Model\\User' => __DIR__ . '/../..' . '/app/Model/User.php',
         'App\\Service\\AuthService' => __DIR__ . '/../..' . '/app/Service/AuthService.php',
         'App\\Service\\UserService' => __DIR__ . '/../..' . '/app/Service/UserService.php',
