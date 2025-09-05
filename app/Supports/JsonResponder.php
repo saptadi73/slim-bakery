@@ -1,5 +1,5 @@
 <?php
-namespace App\Support;
+namespace App\Supports;
 
 use Psr\Http\Message\ResponseInterface;
 

@@ -1,5 +1,5 @@
 <?php
-namespace App\Support;
+namespace App\Supports;
 
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -15,5 +15,16 @@ class RequestHelper
         }
         $data = $request->getParsedBody();
         return is_array($data) ? $data : [];
+    }
+
+    /**
+     * Ambil file upload dari request multipart/form-data
+     * @param ServerRequestInterface $request
+     * @return array
+     */
+    public static function getUploadedFiles(ServerRequestInterface $request)
+    {
+        $files = $request->getUploadedFiles();
+        return is_array($files) ? $files : [];
     }
 }

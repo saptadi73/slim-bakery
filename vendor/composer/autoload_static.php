@@ -302,8 +302,8 @@ class ComposerStaticInitc0d7893a557a5ce10d6810b5c1d421b6
     );
 
     public static $classMap = array (
-        'App\\Middleware\\CorsMiddleware' => __DIR__ . '/../..' . '/app/Middleware/CorsMiddleware.php',
-        'App\\Middleware\\JwtMiddleware' => __DIR__ . '/../..' . '/app/Middleware/JwtMiddleware.php',
+        'App\\Middlewares\\CorsMiddleware' => __DIR__ . '/../..' . '/app/Middlewares/CorsMiddleware.php',
+        'App\\Middlewares\\JwtMiddleware' => __DIR__ . '/../..' . '/app/Middlewares/JwtMiddleware.php',
         'App\\Models\\Deliver' => __DIR__ . '/../..' . '/app/Models/Deliver.php',
         'App\\Models\\Inventory' => __DIR__ . '/../..' . '/app/Models/Inventory.php',
         'App\\Models\\Order' => __DIR__ . '/../..' . '/app/Models/Order.php',
@@ -314,10 +314,13 @@ class ComposerStaticInitc0d7893a557a5ce10d6810b5c1d421b6
         'App\\Models\\Role' => __DIR__ . '/../..' . '/app/Models/Role.php',
         'App\\Models\\User' => __DIR__ . '/../..' . '/app/Models/User.php',
         'App\\Services\\AuthService' => __DIR__ . '/../..' . '/app/Services/AuthService.php',
+        'App\\Services\\OrderService' => __DIR__ . '/../..' . '/app/Services/OrderService.php',
+        'App\\Services\\ProductService' => __DIR__ . '/../..' . '/app/Services/ProductService.php',
         'App\\Services\\SeedService' => __DIR__ . '/../..' . '/app/Services/SeedService.php',
         'App\\Services\\UserService' => __DIR__ . '/../..' . '/app/Services/UserService.php',
-        'App\\Support\\JsonResponder' => __DIR__ . '/../..' . '/app/Support/JsonResponder.php',
-        'App\\Support\\RequestHelper' => __DIR__ . '/../..' . '/app/Support/RequestHelper.php',
+        'App\\Supports\\JsonResponder' => __DIR__ . '/../..' . '/app/Supports/JsonResponder.php',
+        'App\\Supports\\RequestHelper' => __DIR__ . '/../..' . '/app/Supports/RequestHelper.php',
+        'App\\Utils\\Upload' => __DIR__ . '/../..' . '/app/Utils/Upload.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'Brick\\Math\\BigDecimal' => __DIR__ . '/..' . '/brick/math/src/BigDecimal.php',
         'Brick\\Math\\BigInteger' => __DIR__ . '/..' . '/brick/math/src/BigInteger.php',

@@ -6,8 +6,8 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'App\\Middleware\\CorsMiddleware' => $baseDir . '/app/Middleware/CorsMiddleware.php',
-    'App\\Middleware\\JwtMiddleware' => $baseDir . '/app/Middleware/JwtMiddleware.php',
+    'App\\Middlewares\\CorsMiddleware' => $baseDir . '/app/Middlewares/CorsMiddleware.php',
+    'App\\Middlewares\\JwtMiddleware' => $baseDir . '/app/Middlewares/JwtMiddleware.php',
     'App\\Models\\Deliver' => $baseDir . '/app/Models/Deliver.php',
     'App\\Models\\Inventory' => $baseDir . '/app/Models/Inventory.php',
     'App\\Models\\Order' => $baseDir . '/app/Models/Order.php',
@@ -18,10 +18,13 @@ return array(
     'App\\Models\\Role' => $baseDir . '/app/Models/Role.php',
     'App\\Models\\User' => $baseDir . '/app/Models/User.php',
     'App\\Services\\AuthService' => $baseDir . '/app/Services/AuthService.php',
+    'App\\Services\\OrderService' => $baseDir . '/app/Services/OrderService.php',
+    'App\\Services\\ProductService' => $baseDir . '/app/Services/ProductService.php',
     'App\\Services\\SeedService' => $baseDir . '/app/Services/SeedService.php',
     'App\\Services\\UserService' => $baseDir . '/app/Services/UserService.php',
-    'App\\Support\\JsonResponder' => $baseDir . '/app/Support/JsonResponder.php',
-    'App\\Support\\RequestHelper' => $baseDir . '/app/Support/RequestHelper.php',
+    'App\\Supports\\JsonResponder' => $baseDir . '/app/Supports/JsonResponder.php',
+    'App\\Supports\\RequestHelper' => $baseDir . '/app/Supports/RequestHelper.php',
+    'App\\Utils\\Upload' => $baseDir . '/app/Utils/Upload.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
     'Brick\\Math\\BigDecimal' => $vendorDir . '/brick/math/src/BigDecimal.php',
     'Brick\\Math\\BigInteger' => $vendorDir . '/brick/math/src/BigInteger.php',

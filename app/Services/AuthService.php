@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Model\User;
-use App\Model\Role;
+use App\Models\User;
+use App\Models\Role;
 use Firebase\JWT\JWT;
 
 class AuthService
@@ -27,7 +27,7 @@ class AuthService
                 'name' => $user->name,
                 'email' => $user->email,
                 'iat' => time(),  // Waktu token dibuat
-                'exp' => time() + 3600 // Waktu token kadaluarsa (1 jam)
+                'exp' => time() + (12 * 3600) // Waktu token kadaluarsa (1 jam)
             ];
 
             // Membuat JWT token

@@ -1,7 +1,7 @@
 <?php
 namespace App\Services;
 use App\Models\Order;
-use App\Support\JsonResponder;
+use App\Supports\JsonResponder;
 use Psr\Http\Message\ResponseInterface as Response;
 
 class OrderService

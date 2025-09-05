@@ -4,10 +4,10 @@ use Slim\App;
 use App\Services\AuthService;
 use App\Services\UserService;
 use App\Services\RoleService; // Tambahkan RoleService jika diperlukan
-use App\Support\JsonResponder;
-use App\Support\RequestHelper;
+use App\Supports\JsonResponder;
+use App\Supports\RequestHelper;
 use Firebase\JWT\JWT;
-use App\Middleware\JwtMiddleware;
+use App\Middlewares\JwtMiddleware;
 
 return function (App $app) {
     // Route home

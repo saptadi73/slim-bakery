@@ -2,7 +2,7 @@
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 use App\Services\SeedService;
-use App\Support\JsonResponder;
+use App\Supports\JsonResponder;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 
