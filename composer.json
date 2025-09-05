@@ -1,10 +1,17 @@
 {
     "require": {
         "slim/slim": "^4.14",
-        "illuminate/database": "^12.25",
+        "illuminate/database": "^12.28",
         "slim/psr7": "^1.7",
         "firebase/php-jwt": "^6.11",
-        "vlucas/phpdotenv": "^5.6"
+        "vlucas/phpdotenv": "^5.6",
+        "nyholm/psr7": "^1.8",
+        "nyholm/psr7-server": "^1.1",
+        "php-di/php-di": "^7.1",
+        "respect/validation": "^2.4",
+        "nesbot/carbon": "^3.10",
+        "psr/container": "^2.0",
+        "pimple/pimple": "^3.5"
     },
     "autoload": {
         "psr-4": {

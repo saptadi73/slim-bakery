@@ -1,8 +1,9 @@
 <?php
+
 use Slim\App;
-use App\Service\AuthService;
-use App\Service\UserService;
-use App\Service\RoleService; // Tambahkan RoleService jika diperlukan
+use App\Services\AuthService;
+use App\Services\UserService;
+use App\Services\RoleService; // Tambahkan RoleService jika diperlukan
 use App\Support\JsonResponder;
 use App\Support\RequestHelper;
 use Firebase\JWT\JWT;
@@ -18,21 +19,21 @@ return function (App $app) {
     // Registrasi pengguna dengan role
     $app->post('/register', function ($request, $response) {
         $data = RequestHelper::getJsonBody($request);
-        
+
         // Validasi input
         if (empty($data['name']) || empty($data['email']) || empty($data['password'])) {
             return JsonResponder::error($response, 'Invalid input', 400);
         }
 
         // Tentukan role_id default (misalnya 'User' dengan id 1)
-        $role = \App\Model\Role::where('name', 'User')->first(); // Sesuaikan dengan role yang ada
+        $role = \App\Models\Role::where('name', 'User')->first(); // Sesuaikan dengan role yang ada
         if (!$role) {
             return JsonResponder::error($response, 'Role not found', 404);
         }
 
         // Panggil fungsi register untuk membuat user baru
         $user = AuthService::register($data['name'], $data['email'], $data['password'], $role->id);
-        
+
         return JsonResponder::success($response, $user, 'User registered');
     });
 
@@ -52,7 +53,7 @@ return function (App $app) {
     // Mengambil profil pengguna
     $app->get('/profile', function ($request, $response) {
         $jwt = $request->getAttribute('jwt');
-        $user = \App\Model\User::find($jwt['sub']); // Ambil user berdasarkan JWT
+        $user = \App\Models\User::find($jwt['sub']); // Ambil user berdasarkan JWT
 
         // Mengambil informasi role
         $role = $user->role;  // Menampilkan role terkait pengguna

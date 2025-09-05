@@ -10,7 +10,7 @@ $c = new Capsule();
 $c->addConnection([
     'driver' => $_ENV['DB_DRIVER'] ?? 'mysql',
     'host' => $_ENV['DB_HOST'] ?? '127.0.0.1',
-    'database' => $_ENV['DB_DATABASE'] ?? 'erpmini',
+    'database' => $_ENV['DB_DATABASE'] ?? 'bakery',
     'username' => $_ENV['DB_USERNAME'] ?? 'root',
     'password' => $_ENV['DB_PASSWORD'] ?? '',
     'charset' => $_ENV['DB_CHARSET'] ?? 'utf8mb4',
@@ -24,6 +24,7 @@ $c->bootEloquent();
 $schema = Capsule::schema();
 
 /** users table (without email_verified_at + softDeletes) */
+Capsule::schema()->dropIfExists('users');
 if (!$schema->hasTable('users')) {
     $schema->create('users', function ($t) {
         $t->bigIncrements('id');
@@ -41,6 +42,8 @@ if (!$schema->hasTable('users')) {
 }
 
 /** roles + pivot */
+Capsule::schema()->dropIfExists('role_user');
+Capsule::schema()->dropIfExists('roles');
 if (!$schema->hasTable('roles')) {
     $schema->create('roles', function ($t) {
         $t->bigIncrements('id');
@@ -64,6 +67,7 @@ if (!$schema->hasTable('role_user')) {
 }
 
 /** auth_tokens: refresh/email_verify/password_reset */
+Capsule::schema()->dropIfExists('auth_tokens');
 if (!$schema->hasTable('auth_tokens')) {
     $schema->create('auth_tokens', function ($t) {
         $t->bigIncrements('id');
@@ -80,22 +84,22 @@ if (!$schema->hasTable('auth_tokens')) {
 }
 
 // Seed role dasar
-$admin = \App\Model\Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
-$teknisi = \App\Model\Role::firstOrCreate(['name' => 'teknisi'], ['label' => 'Teknisi']);
-$userRole = \App\Model\Role::firstOrCreate(['name' => 'user'], ['label' => 'User']);
+$admin = \App\Models\Role::firstOrCreate(['name' => 'admin'], ['label' => 'Administrator']);
+$pegawai = \App\Models\Role::firstOrCreate(['name' => 'pegawai'], ['label' => 'Pegawai']);
+$userRole = \App\Models\Role::firstOrCreate(['name' => 'user'], ['label' => 'User']);
 
 // Set ID default untuk role
 $admin->id = 1; // ID untuk admin
-$teknisi->id = 2; // ID untuk teknisi
+$pegawai->id = 2; // ID untuk teknisi
 $userRole->id = 3; // ID untuk user
 
 // Simpan role dengan ID yang sudah ditentukan
 $admin->save();
-$teknisi->save();
+$pegawai->save();
 $userRole->save();
 
 // jika ada user id=1, jadikan admin
-$first = \App\Model\User::find(1);
+$first = \App\Models\User::find(1);
 if ($first) {
     $first->roles()->syncWithoutDetaching([$admin->id]); // Mengaitkan user dengan role admin
 }
