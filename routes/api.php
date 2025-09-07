@@ -32,7 +32,7 @@ return function (App $app) {
         }
 
         // Panggil fungsi register untuk membuat user baru
-        $user = AuthService::register($data['name'], $data['email'], $data['password'], $role->id,$data['outlet_id'] ?? null);
+        $user = AuthService::register($data['name'], $data['email'], $data['password'], $data['role_id'],$data['outlet_id'] ?? null);
 
         return JsonResponder::success($response, $user, 'User registered');
     });
@@ -45,7 +45,7 @@ return function (App $app) {
         }
         $result = AuthService::login($data['email'], $data['password']);
         if ($result['success']) {
-            return JsonResponder::success($response, ['token' => $result['token'],'user'=>$result['user']], 'Login success');
+            return JsonResponder::success($response, ['token' => $result['token'],'user'=>$result['user'],'role_id'=>$result['role_id'],'role'=>$result['role'],'outlet_id'=>$result['outlet_id'],'outlet_name'=>$result['outlet_name']], 'Login success');
         }
         return JsonResponder::error($response, $result['message'], 401);
     });
@@ -110,4 +110,13 @@ return function (App $app) {
         }
         return JsonResponder::error($response, 'User not found', 404);
     })->add(new JwtMiddleware());
+
+    $app->get('/roles', function ($request, $response) {
+        try {
+            return RoleService::listRoles($response);
+        } catch (\Throwable $th) {
+            //throw $th;
+            return JsonResponder::error($response, $th->getMessage(), 500);
+        }
+    });
 };

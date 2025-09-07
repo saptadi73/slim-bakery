@@ -43,7 +43,11 @@ class AuthService
             return [
                 'success' => true,
                 'token' => $jwt,
-                'user' => $user
+                'user' => $user,
+                'role_id' => $user->roles->first() ? $user->roles->first()->id : null,
+                'role' => $user->roles->first() ? $user->roles->first()->name : null,
+                'outlet_id' => $user->outlets->first() ? $user->outlets->first()->id : null,
+                'outlet_name' => $user->outlets->first() ? $user->outlets->first()->nama : null,
             ];
         }
 
