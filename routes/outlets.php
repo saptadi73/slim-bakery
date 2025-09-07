@@ -13,7 +13,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 return function (App $app) {
     $container = $app->getContainer();
 
-    $app->group('/oulets', function (RouteCollectorProxy $cust) use ($container) {
+    $app->group('/outlets', function (RouteCollectorProxy $cust) use ($container) {
         $cust->get('', function (Request $request, Response $response) {
             try {
                 return OutletService::listOutletPriority($response);
@@ -56,10 +56,6 @@ return function (App $app) {
                 ], 500);
             }
         })->add(new JwtMiddleware());
-        $cust->get('/{id}', function (Request $request, Response $response, array $args) {
-            $id = (int)$args['id'];
-            return OutletService::getOutletById($response, $id);
-        });
 
         $cust->post('/update/{id}', function (Request $request, Response $response, array $args) use ($container) {
             $id = (int)$args['id'];

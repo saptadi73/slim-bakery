@@ -54,7 +54,7 @@ class AuthService
     }
 
     // Fungsi registrasi
-    public static function register($name, $email, $password, $role_id = null)
+    public static function register($name, $email, $password, $role_id = null, $outlet_id = null)
     {
         // Jika tidak ada role_id yang diberikan, set role default (misalnya, 'User')
         if (!$role_id) {
@@ -72,10 +72,15 @@ class AuthService
             'password' => password_hash($password, PASSWORD_DEFAULT),  // Enkripsi password
         ]);
 
+
+
         // Menyambungkan pengguna dengan role yang diberikan melalui pivot table role_user
         $user->roles()->attach($role_id);  // Menambahkan relasi pada tabel pivot 'role_user'
 
-        return $user;  // Mengembalikan data user yang telah dibuat
+    // Menyambungkan user ke outlet (user_outlet), default ke outlet_id=1 jika null
+    $user->outlets()->attach($outlet_id ?? 1);
+
+    return $user;  // Mengembalikan data user yang telah dibuat
     }
 
     /**

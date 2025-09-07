@@ -32,7 +32,7 @@ return function (App $app) {
         }
 
         // Panggil fungsi register untuk membuat user baru
-        $user = AuthService::register($data['name'], $data['email'], $data['password'], $role->id);
+        $user = AuthService::register($data['name'], $data['email'], $data['password'], $role->id,$data['outlet_id'] ?? null);
 
         return JsonResponder::success($response, $user, 'User registered');
     });
