@@ -45,10 +45,25 @@ return function (App $app) {
         }
         $result = AuthService::login($data['email'], $data['password']);
         if ($result['success']) {
-            return JsonResponder::success($response, ['token' => $result['token']], 'Login success');
+            return JsonResponder::success($response, ['token' => $result['token'],'user'=>$result['user']], 'Login success');
         }
         return JsonResponder::error($response, $result['message'], 401);
     });
+
+    $app->post('/update/role', function ($request, $response) {
+        $data = RequestHelper::getJsonBody($request);
+        if (empty($data['user_id']) || empty($data['role_id'])) {
+            return JsonResponder::error($response, 'Invalid input', 400);
+        }
+
+        // Cari user berdasarkan ID
+        $result = AuthService::updateUserRole($data['user_id'], $data['role_id']);
+        if ($result['success']) {
+            return JsonResponder::success($response, $result['user'], 'User role updated');
+        }else {
+            return JsonResponder::error($response, $result['message'], 400);
+        }
+    })->add(new JwtMiddleware());
 
     // Mengambil profil pengguna
     $app->get('/profile', function ($request, $response) {

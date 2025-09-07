@@ -21,13 +21,20 @@ class AuthService
                 throw new \Exception('JWT_SECRET not set in environment');
             }
 
+
+            // Ambil semua role user (dari relasi, otomatis join ke tabel role)
+            $roles = $user->roles; // Collection of Role
+
+            // Ambil nama role pertama (jika multi-role)
+            $roleName = $roles->first() ? $roles->first()->name : null;
+
             // Payload untuk JWT token
             $payload = [
                 'sub' => $user->id,  // ID user yang login
                 'name' => $user->name,
                 'email' => $user->email,
                 'iat' => time(),  // Waktu token dibuat
-                'exp' => time() + (12 * 3600) // Waktu token kadaluarsa (1 jam)
+                'exp' => time() + (12 * 3600) // Waktu token kadaluarsa (12 jam)
             ];
 
             // Membuat JWT token
@@ -69,5 +76,22 @@ class AuthService
         $user->roles()->attach($role_id);  // Menambahkan relasi pada tabel pivot 'role_user'
 
         return $user;  // Mengembalikan data user yang telah dibuat
+    }
+
+    /**
+     * Update role user di tabel pivot role_user
+     * @param int $userId
+     * @param int|array $roleIds
+     * @return array
+     */
+    public static function updateUserRole($userId, $roleIds)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return ['success' => false, 'message' => 'User tidak ditemukan'];
+        }
+        // Sinkronisasi role baru (bisa 1 id atau array id)
+        $user->roles()->sync((array)$roleIds);
+        return ['success' => true, 'message' => 'Role user berhasil diupdate'];
     }
 }
