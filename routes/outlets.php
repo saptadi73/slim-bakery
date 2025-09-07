@@ -30,6 +30,7 @@ return function (App $app) {
                 return JsonResponder::error($response, $th->getMessage(), 500);
             }
         });
+
         $cust->get('/{id}', function (Request $request, Response $response, array $args) {
             $id = (int)$args['id'];
             return OutletService::getOutletById($response, $id);
