@@ -34,6 +34,7 @@ Capsule::schema()->dropIfExists('orders');
 Capsule::schema()->dropIfExists('products');
 Capsule::schema()->dropIfExists('outlets');
 
+
 /** outlets table */
 if (!$schema->hasTable('outlets')) {
     $schema->create('outlets', function ($t) {
@@ -142,3 +143,16 @@ if (!$schema->hasTable('delivers')) {
     echo "Tabel delivers dibuat.\n";
 }   
 echo "Migrasi selesai.\n";
+
+/** Pivot table user_outlet */
+if (!$schema->hasTable('user_outlet')) {
+    $schema->create('user_outlet', function ($t) {
+        $t->unsignedBigInteger('user_id');
+        $t->unsignedBigInteger('outlet_id');
+        $t->primary(['user_id', 'outlet_id']);
+        $t->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+        $t->foreign('outlet_id')->references('id')->on('outlets')->onDelete('cascade');
+        $t->timestamps();
+    });
+    echo "Tabel user_outlet dibuat.\n";
+}

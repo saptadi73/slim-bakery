@@ -19,6 +19,11 @@ class Outlet extends Model
     {
         return $this->hasMany(Order::class, 'outlet_id');
     }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'user_outlet', 'outlet_id', 'user_id')->withTimestamps();
+    }
     
 }
 

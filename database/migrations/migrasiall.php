@@ -24,6 +24,8 @@ $c->bootEloquent();
 $schema = Capsule::schema();
 
 /** users table (without email_verified_at + softDeletes) */
+Capsule::schema()->dropIfExists('user_outlet');
+Capsule::schema()->dropIfExists('role_user');
 Capsule::schema()->dropIfExists('users');
 if (!$schema->hasTable('users')) {
     $schema->create('users', function ($t) {
@@ -42,7 +44,8 @@ if (!$schema->hasTable('users')) {
 }
 
 /** roles + pivot */
-Capsule::schema()->dropIfExists('role_user');
+
+
 Capsule::schema()->dropIfExists('roles');
 if (!$schema->hasTable('roles')) {
     $schema->create('roles', function ($t) {

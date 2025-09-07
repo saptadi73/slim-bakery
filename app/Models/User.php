@@ -22,4 +22,9 @@ class User extends Model
     {
         return $this->roles()->where('name', $role)->exists();
     }
+
+    public function outlets()
+    {
+        return $this->belongsToMany(Outlet::class, 'user_outlet', 'user_id', 'outlet_id')->withTimestamps();
+    }
 }
