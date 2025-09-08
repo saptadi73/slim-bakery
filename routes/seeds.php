@@ -17,5 +17,9 @@ return function (App $app) {
             $payload = SeedService::isiOutlet();
             return JsonResponder::success($response, $payload, 'Isi tabel roles');
         });
+        $check->get('/orders', function (Request $request, Response $response) {
+            $payload = SeedService::createOrder();
+            return JsonResponder::success($response, $payload, 'Isi tabel orders');
+        });
     });
 };

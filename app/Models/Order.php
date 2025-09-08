@@ -8,7 +8,7 @@ class Order extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    protected $fillable = ['outlet_id', 'quantity','tanggal','pic','product_id','no_order'];  // Kolom yang bisa diisi
+    protected $fillable = ['outlet_id','status', 'quantity','tanggal','pic','product_id','no_order'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
     public function outlet()

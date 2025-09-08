@@ -27,37 +27,95 @@ return function (App $app) {
             }
         })->add(new JwtMiddleware());
 
-        $ord->get('/{id}', function (Request $request, Response $response, array $args) {
-            $id = (int)$args['id'];
+        $ord->get('/list', function (Request $request, Response $response) use ($container) {
+            $svc = $container->get(OrderService::class);
             try {
-                return OrderService::getOrder($response, $id);
-            } catch (\Throwable $th) {
-                return JsonResponder::error($response, $th->getMessage(), 500);
-            }
-        });
-
-        $ord->get('', function (Request $request, Response $response) {
-            try {
-                return OrderService::listOrders($response);
-            } catch (\Throwable $th) {
-                return JsonResponder::error($response, $th->getMessage(), 500);
-            }
-        });
-
-        $ord->post('/{id}/update', function (Request $request, Response $response, array $args) {
-            $id = (int)$args['id'];
-            $data = RequestHelper::getJsonBody($request);
-            try {
-                return OrderService::updateOrder($response, $id, $data);
-            } catch (\Throwable $e) {
+                return $svc->listOrders($response);
+            } catch (\Exception $e) {
                 return JsonResponder::error($response, [
                     'message' => $e->getMessage(),
                     'type'    => get_class($e),
-                    'data'    => $data,
                     'file'    => $e->getFile() . ':' . $e->getLine(),
                 ], 500);
             }
-        })->add(new JwtMiddleware());
+        });
+
+        $ord->get('/products', function (Request $request, Response $response) use ($container) {
+            $svc = $container->get(OrderService::class);
+            try {
+                return $svc->SumOrdersGroupsAllByProduct($response);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        });
+
+        $ord->get('/outlets/{id}', function (Request $request, Response $response, array $args) use ($container) {
+            $id = (int)$args['id'];
+            $svc = $container->get(OrderService::class);
+            try {
+                return $svc->SumOrdersGroupsByOutlet($response,$id);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        });
+
+        $ord->get('/products/{id}', function (Request $request, Response $response, array $args) use ($container) {
+            $id = (int)$args['id'];
+            $svc = $container->get(OrderService::class);
+            try {
+                return $svc->SumOrdersGroupsByProduct($response,$id);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        });
+
+        $ord->get('/groups', function (Request $request, Response $response) use ($container) {
+            $svc = $container->get(OrderService::class);
+            try {
+                return $svc->OrdersOutletGroup($response);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        });
+
+        $ord->get('/{id}', function (Request $request, Response $response, array $args) use ($container) {
+            $id = (int)$args['id'];
+            $svc = $container->get(OrderService::class);
+            if ($id <= 0) {
+                return JsonResponder::error($response, 'ID tidak valid', 400);
+            }
+
+            try {
+                $order = $svc->getOrder($response, $id);
+                if (!$order) {
+                    return JsonResponder::error($response, 'Order tidak ditemukan', 404);
+                }
+                return $order;
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        });
+
     });
 }
 ?>

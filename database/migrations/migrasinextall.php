@@ -103,6 +103,7 @@ if (!$schema->hasTable('orders')) {
         $t->date('tanggal')->nullable();
         $t->string('pic')->nullable();
         $t->string('no_order')->unique();
+        $t->enum('status', ['open', 'processed', 'delivered'])->default('open');
         $t->timestamps();
 
         $t->foreign('outlet_id')->references('id')->on('outlets')->onDelete('cascade');
