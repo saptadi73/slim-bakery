@@ -338,7 +338,7 @@ class SeedService
     public static function isiOutlet() {
         $now= Carbon::now();
         $outlet = [
-            ['nama' => 'Outlet Pusat', 'kode' => 'OUTPUS', 'alamat' => 'Jl. Merdeka No.1', 'phone' => '021-123456'],
+            ['nama' => 'Pusat', 'kode' => 'PUS', 'alamat' => 'Jl. Merdeka No.1', 'phone' => '021-123456'],
             ['nama' => 'Outlet Cabang 1', 'kode' => 'OUTCB1', 'alamat' => 'Jl. Sudirman No.2', 'phone' => '021-654321'],
             ['nama' => 'Outlet Cabang 2', 'kode' => 'OUTCB2', 'alamat' => 'Jl. Thamrin No.3', 'phone' => '021-112233'],
             ['nama' => 'Outlet Cabang 3', 'kode' => 'OUTCB3', 'alamat' => 'Jl. Gatot Subroto No.4', 'phone' => '021-445566'],

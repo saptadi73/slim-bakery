@@ -12,7 +12,7 @@ class ProductService
     public static function listProducts(Response $response)
     {
         try {
-            $products = Product::all();
+            $products = Product::with('category')->get();
             return JsonResponder::success($response, $products, 'Daftar produk berhasil diambil');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);

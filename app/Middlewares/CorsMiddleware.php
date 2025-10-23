@@ -11,15 +11,19 @@ class CorsMiddleware implements MiddlewareInterface
 {
     public function process(Request $request, RequestHandlerInterface $handler): Response
     {
+        // Handle preflight OPTIONS request first
+        if ($request->getMethod() === 'OPTIONS') {
+            return $handler->handle($request)
+                ->withHeader('Access-Control-Allow-Origin', '*')
+                ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
+                ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                ->withStatus(200);
+        }
+
         $response = $handler->handle($request)
             ->withHeader('Access-Control-Allow-Origin', '*')
             ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
             ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-
-        // Handle preflight OPTIONS request
-        if ($request->getMethod() === 'OPTIONS') {
-            return $response->withStatus(200);
-        }
 
         return $response;
     }

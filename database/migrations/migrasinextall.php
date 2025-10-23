@@ -8,15 +8,14 @@ use Illuminate\Database\Capsule\Manager as Capsule;
 
 $c = new Capsule();
 $c->addConnection([
-    'driver' => $_ENV['DB_DRIVER'] ?? 'mysql',
+    'driver' => $_ENV['DB_DRIVER'] ?? 'pgsql',
     'host' => $_ENV['DB_HOST'] ?? '127.0.0.1',
     'database' => $_ENV['DB_DATABASE'] ?? 'bakery',
-    'username' => $_ENV['DB_USERNAME'] ?? 'root',
-    'password' => $_ENV['DB_PASSWORD'] ?? '',
-    'charset' => $_ENV['DB_CHARSET'] ?? 'utf8mb4',
-    'collation' => $_ENV['DB_COLLATION'] ?? 'utf8mb4_unicode_ci',
+    'username' => $_ENV['DB_USERNAME'] ?? 'openpg',
+    'password' => $_ENV['DB_PASSWORD'] ?? 'openpgpwd',
+    'charset' => $_ENV['DB_CHARSET'] ?? 'utf8',
     'prefix' => '',
-    'port' => (int)($_ENV['DB_PORT'] ?? 3306),
+    'port' => (int)($_ENV['DB_PORT'] ?? 5432),
 ]);
 $c->setAsGlobal();
 $c->bootEloquent();
@@ -25,14 +24,23 @@ $schema = Capsule::schema();
 
 
 
-// Drop tables in correct order to avoid foreign key constraint errors
+// Disable foreign key checks for PostgreSQL
+Capsule::connection()->getPdo()->exec('SET CONSTRAINTS ALL DEFERRED');
+
+// Drop tables
+Capsule::schema()->dropIfExists('user_outlet');
 Capsule::schema()->dropIfExists('delivers');
 Capsule::schema()->dropIfExists('providers');
+Capsule::schema()->dropIfExists('orders');
 Capsule::schema()->dropIfExists('product_movings');
 Capsule::schema()->dropIfExists('inventories');
-Capsule::schema()->dropIfExists('orders');
 Capsule::schema()->dropIfExists('products');
+Capsule::schema()->dropIfExists('categories');
 Capsule::schema()->dropIfExists('outlets');
+
+// Re-enable foreign key checks after migration (if needed)
+Capsule::connection()->getPdo()->exec('SET CONSTRAINTS ALL IMMEDIATE');
+
 
 
 /** outlets table */
@@ -40,7 +48,7 @@ if (!$schema->hasTable('outlets')) {
     $schema->create('outlets', function ($t) {
         $t->bigIncrements('id');
         $t->string('nama');
-        $t->string('kode')->unique();
+        $t->string('kode')->nullable();
         $t->string('alamat')->nullable();
         $t->string('phone')->nullable();
         $t->integer('prioritas')->default(0);
@@ -49,13 +57,27 @@ if (!$schema->hasTable('outlets')) {
     });
     echo "Tabel outlets dibuat.\n";
 }
+
+if (!$schema->hasTable('categories')) {
+    $schema->create('categories', function ($t) {
+        $t->bigIncrements('id');
+        $t->string('nama');
+        $t->string('keterangan')->nullable();
+        $t->timestamps();
+    });
+    echo "Tabel categories dibuat.\n";
+}
+
+
 /** products table */
 if (!$schema->hasTable('products')) {
     $schema->create('products', function ($t) {
         $t->bigIncrements('id');
         $t->string('nama');
-        $t->string('kode')->unique();
+        $t->string('kode')->nullable();
         $t->string('gambar')->nullable();
+        $t->unsignedBigInteger('category_id');
+        $t->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
         $t->timestamps();
     });
     echo "Tabel products dibuat.\n";
@@ -157,3 +179,17 @@ if (!$schema->hasTable('user_outlet')) {
     });
     echo "Tabel user_outlet dibuat.\n";
 }
+
+// Seed default outlet
+// $defaultOutlet = \App\Models\Outlet::firstOrCreate(
+//     ['kode' => 'DEFAULT'],
+//     [
+//         'nama' => 'Default Outlet',
+//         'alamat' => 'Default Address',
+//         'phone' => '0000000000',
+//         'prioritas' => 0,
+//         'gambar' => 'outlet_default.jpg'
+//     ]
+// );
+
+// echo "Default outlet seeded.\n";

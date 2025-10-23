@@ -1,0 +1,3 @@
+- [x] Add seeding for default outlet in migrasinextall.php
+- [x] Run the migration to create the default outlet
+- [x] Test the /register endpoint to ensure user_outlet insert succeeds

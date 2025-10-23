@@ -25,14 +25,24 @@ return function (App $app) {
             return JsonResponder::error($response, 'Invalid input', 400);
         }
 
-        // Tentukan role_id default (misalnya 'User' dengan id 1)
-        $role = \App\Models\Role::where('name', 'User')->first(); // Sesuaikan dengan role yang ada
-        if (!$role) {
-            return JsonResponder::error($response, 'Role not found', 404);
+        // Jika role_id diberikan, gunakan itu, jika tidak gunakan default 'user'
+        $role_id = $data['role_id'] ?? null;
+        if (!$role_id) {
+            $role = \App\Models\Role::where('name', 'user')->first();
+            if (!$role) {
+                return JsonResponder::error($response, 'Default role not found', 404);
+            }
+            $role_id = $role->id;
+        } else {
+            // Validasi role_id yang diberikan
+            $role = \App\Models\Role::find($role_id);
+            if (!$role) {
+                return JsonResponder::error($response, 'Role not found', 404);
+            }
         }
 
         // Panggil fungsi register untuk membuat user baru
-        $user = AuthService::register($data['name'], $data['email'], $data['password'], $data['role_id'],$data['outlet_id'] ?? null);
+        $user = AuthService::register($data['name'], $data['email'], $data['password'], $role_id, $data['outlet_id'] ?? null);
 
         return JsonResponder::success($response, $user, 'User registered');
     });

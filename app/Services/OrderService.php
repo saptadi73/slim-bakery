@@ -14,14 +14,20 @@ class OrderService
     {
         $prefix = 'ORDER-';
 
-        $last = Order::where('no_order', 'like', $prefix . '%')
-            ->orderBy('no_order')   // aman jika 5 digit zero-pad
-            ->value('no_order');
+        // Get all order numbers with the prefix
+        $orders = Order::where('no_order', 'like', $prefix . '%')
+            ->pluck('no_order')
+            ->toArray();
 
-        $next = 1;
-        if ($last && preg_match('/^' . preg_quote($prefix, '/') . '(\d{5})$/', $last, $m)) {
-            $next = ((int)$m[1]) + 1;
+        $maxNumber = 0;
+        foreach ($orders as $order) {
+            $num = (int)substr($order, strlen($prefix));
+            if ($num > $maxNumber) {
+                $maxNumber = $num;
+            }
         }
+
+        $next = $maxNumber + 1;
 
         return $prefix . str_pad((string)$next, 5, '0', STR_PAD_LEFT);
     }
