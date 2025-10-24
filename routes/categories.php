@@ -2,7 +2,7 @@
 
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
-use App\Services\ProductService;
+use App\Services\CategoryService;
 use App\Supports\JsonResponder;
 use App\Supports\RequestHelper;
 use App\Middlewares\JwtMiddleware;
@@ -12,16 +12,15 @@ use Psr\Http\Message\ResponseInterface as Response;
 return function (App $app) {
     $container = $app->getContainer();
 
-    $app->group('/products', function (RouteCollectorProxy $cust) use ($container) {
+    $app->group('/categories', function (RouteCollectorProxy $cust) use ($container) {
         $cust->get('', function (Request $request, Response $response) {
-            return ProductService::listProducts($response);
+            return CategoryService::listCategories($response);
         });
         $cust->post('/new', function (Request $request, Response $response) use ($container) {
-            $svc = $container->get(ProductService::class);
+            $svc = $container->get(CategoryService::class);
             $data = RequestHelper::getJsonBody($request);
-            $file = RequestHelper::getUploadedFiles($request)['file'] ?? null;
             try {
-                return $svc->createProduct($response, $data, $file);
+                return $svc->createCategory($response, $data);
             } catch (\Exception $e) {
                 return JsonResponder::error($response, [
                     'message' => $e->getMessage(),
@@ -33,16 +32,15 @@ return function (App $app) {
         })->add(new JwtMiddleware());
         $cust->get('/{id}', function (Request $request, Response $response, array $args) {
             $id = (int)$args['id'];
-            return ProductService::getProduct($response, $id);
+            return CategoryService::getCategory($response, $id);
         });
 
         $cust->post('/update/{id}', function (Request $request, Response $response, array $args) use ($container) {
             $id = (int)$args['id'];
-            $svc = $container->get(ProductService::class);
+            $svc = $container->get(CategoryService::class);
             $data = RequestHelper::getJsonBody($request);
-            $file = RequestHelper::getUploadedFiles($request)['file'] ?? null;
             try {
-                return $svc->updateProduct($response, $id, $data, $file);
+                return $svc->updateCategory($response, $id, $data);
             } catch (\Exception $e) {
                 return JsonResponder::error($response, [
                     'message' => $e->getMessage(),
@@ -52,13 +50,12 @@ return function (App $app) {
                 ], 500);
             }
         })->add(new JwtMiddleware());
-        
-        $cust->post('/update/image/{id}', function (Request $request, Response $response, array $args) use ($container) {
+
+        $cust->post('/delete/{id}', function (Request $request, Response $response, array $args) use ($container) {
             $id = (int)$args['id'];
-            $svc = $container->get(ProductService::class);
-            $file = RequestHelper::getUploadedFiles($request)['file'] ?? null;
+            $svc = $container->get(CategoryService::class);
             try {
-                return $svc->updateProductImage($response, $id, $file);
+                return $svc->deleteCategory($response, $id);
             } catch (\Exception $e) {
                 return JsonResponder::error($response, [
                     'message' => $e->getMessage(),
@@ -66,11 +63,6 @@ return function (App $app) {
                     'file'    => $e->getFile() . ':' . $e->getLine(),
                 ], 500);
             }
-        })->add(new JwtMiddleware());
-
-        $cust->post('/delete/{id}', function (Request $request, Response $response, array $args) {
-            $id = (int)$args['id'];
-            return ProductService::deleteProduct($response, $id);
         })->add(new JwtMiddleware());
     });
 };

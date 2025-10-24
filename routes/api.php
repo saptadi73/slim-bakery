@@ -54,8 +54,8 @@ return function (App $app) {
             return JsonResponder::error($response, 'Invalid input', 400);
         }
         $result = AuthService::login($data['email'], $data['password']);
-        if ($result['success']) {
-            return JsonResponder::success($response, ['token' => $result['token'],'user'=>$result['user'],'role_id'=>$result['role_id'],'role'=>$result['role'],'outlet_id'=>$result['outlet_id'],'outlet_name'=>$result['outlet_name']], 'Login success');
+        if ($result['status']) {
+            return JsonResponder::success($response, ['token' => $result['data']['token'],'user'=>$result['data']['user'],'role_id'=>$result['data']['role_id'],'role'=>$result['data']['role'],'outlet_id'=>$result['data']['outlet_id'],'outlet_name'=>$result['data']['outlet_name']], 'Login success');
         }
         return JsonResponder::error($response, $result['message'], 401);
     });
@@ -68,7 +68,7 @@ return function (App $app) {
 
         // Cari user berdasarkan ID
         $result = AuthService::updateUserRole($data['user_id'], $data['role_id']);
-        if ($result['success']) {
+        if ($result['status']) {
             return JsonResponder::success($response, $result['user'], 'User role updated');
         }else {
             return JsonResponder::error($response, $result['message'], 400);

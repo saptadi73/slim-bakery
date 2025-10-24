@@ -44,6 +44,7 @@ class ProductService
                 'nama' => $data['nama'],
                 'kode' => $data['kode'],
                 'gambar' => $data['gambar'] ?? null,
+                'category_id' => $data['category_id'] ?? null,
             ]);
 
             if ($file && $file->getError() === UPLOAD_ERR_OK) {
@@ -99,7 +100,7 @@ class ProductService
      * @param UploadedFileInterface|null $file
      * @return Response
      */
-    public static function updateProduct(Response $response, $id, array $data, UploadedFileInterface $file = null)
+    public static function updateProduct(Response $response, $id, array $data, ?UploadedFileInterface $file = null)
     {
         $product = Product::find($id);
         if (!$product) {
@@ -109,8 +110,9 @@ class ProductService
         // Update data dasar
         $product->nama = $data['nama'] ?? $product->nama;
         $product->kode = $data['kode'] ?? $product->kode;
+        $product->category_id = $data['category_id'] ?? $product->category_id;
 
-        // Jika ada file baru
+        // Jika ada file baru, update gambar; jika tidak, biarkan gambar tetap
         if ($file && $file->getError() === UPLOAD_ERR_OK) {
             // Hapus file lama jika ada
             if ($product->gambar) {
@@ -120,9 +122,30 @@ class ProductService
             $filename = Upload::storeImage($file, 'products');
             $product->gambar = $filename;
         }
+        // Jika file tidak ada atau null, field gambar tidak diubah
 
         $product->save();
         return JsonResponder::success($response, $product, 'Produk berhasil diupdate');
+    }
+
+    public static function deleteProduct(Response $response, $id)
+    {
+        try {
+            $product = Product::find($id);
+            if (!$product) {
+                return JsonResponder::error($response, 'Produk tidak ditemukan', 404);
+            }
+
+            // Hapus gambar jika ada
+            if ($product->gambar) {
+                Upload::deleteImage($product->gambar);
+            }
+
+            $product->delete();
+            return JsonResponder::success($response, [], 'Produk berhasil dihapus');
+        } catch (\Exception $e) {
+            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
     }
 
 

@@ -77,4 +77,14 @@ final class Upload
         }
         return false;
     }
+
+    /**
+     * Extract filename from relative path
+     * @param string $relativePath Full relative path like "/uploads/products/filename.jpg"
+     * @return string Filename like "filename.jpg"
+     */
+    public static function getFilenameFromPath(string $relativePath): string
+    {
+        return basename($relativePath);
+    }
 }
