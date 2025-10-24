@@ -47,7 +47,7 @@ return function (App $app) {
             $data = RequestHelper::getJsonBody($request);
             $file = RequestHelper::getUploadedFiles($request)['file'] ?? null;
             try {
-                return $svc->createProduct($response, $data, $file);
+                return $svc->createOutlet($response, $data, $file);
             } catch (\Exception $e) {
                 return JsonResponder::error($response, [
                     'message' => $e->getMessage(),
@@ -81,6 +81,20 @@ return function (App $app) {
             $file = RequestHelper::getUploadedFiles($request)['file'] ?? null;
             try {
                 return $svc->updateOutletImage($response, $id, $file);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        })->add(new JwtMiddleware());
+
+        $cust->delete('/{id}', function (Request $request, Response $response, array $args) use ($container) {
+            $id = (int)$args['id'];
+            $svc = $container->get(OutletService::class);
+            try {
+                return $svc->deleteOutlet($response, $id);
             } catch (\Exception $e) {
                 return JsonResponder::error($response, [
                     'message' => $e->getMessage(),

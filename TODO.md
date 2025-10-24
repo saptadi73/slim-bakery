@@ -1,3 +1,6 @@
-- [x] Add seeding for default outlet in migrasinextall.php
-- [x] Run the migration to create the default outlet
-- [x] Test the /register endpoint to ensure user_outlet insert succeeds
+- [x] Update app/Models/Outlet.php: Change fillable to include 'gambar_dir', 'gambar_nama' instead of 'gambar'
+- [x] Update app/Services/OutletService.php: Modify createOutlet to handle gambar_dir and gambar_nama
+- [x] Update app/Services/OutletService.php: Modify updateOutlet to handle gambar_dir and gambar_nama
+- [x] Update app/Services/OutletService.php: Modify updateOutletImage to handle gambar_dir and gambar_nama
+- [x] Update app/Services/OutletService.php: Modify deleteOutlet to use combined path for deletion
+- [x] Fix routes/outlets.php: Change createProduct to createOutlet

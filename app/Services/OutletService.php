@@ -31,22 +31,25 @@ class OutletService
         }
     }
 
-    public static function createOutlet(Response $response, $data, UploadedFileInterface $file)
+    public static function createOutlet(Response $response, $data, UploadedFileInterface $file = null)
     {
 
-        if (empty($data['nama']) || empty($data['alamat'])) {
-            return JsonResponder::error($response, 'Data tidak lengkap', 400);
+        if (empty($data['nama'])) {
+            return JsonResponder::error($response, 'Nama outlet harus diisi', 400);
         }
 
         try {
             $outlet = Outlet::create([
                 'nama' => $data['nama'],
-                'alamat' => $data['alamat'],
+                'alamat' => $data['alamat'] ?? null,
+                'phone' => $data['phone'] ?? null,
+                'kode' => $data['kode'] ?? null,
+                'prioritas' => $data['prioritas'] ?? null,
             ]);
 
             if ($file && $file->getError() === UPLOAD_ERR_OK) {
-                $filename = Upload::storeImage($file, 'outlets');
-                $outlet->gambar = $filename;
+                $relativePath = Upload::storeImage($file, 'outlets');
+                $outlet->gambar = $relativePath;
                 $outlet->save();
             } else {
                 $outlet->gambar = null;
@@ -59,7 +62,7 @@ class OutletService
         }
     }
 
-    public static function updateOutlet(Response $response, $id, $data, UploadedFileInterface $file)
+    public static function updateOutlet(Response $response, $id, $data, ?UploadedFileInterface $file = null)
     {
         try {
             $outlet = Outlet::find($id);
@@ -67,16 +70,25 @@ class OutletService
                 return JsonResponder::error($response, 'Outlet tidak ditemukan', 404);
             }
 
-            if (!empty($data['nama'])) {
+            if (isset($data['nama'])) {
                 $outlet->nama = $data['nama'];
             }
-            if (!empty($data['alamat'])) {
+            if (isset($data['alamat'])) {
                 $outlet->alamat = $data['alamat'];
+            }
+            if (isset($data['phone'])) {
+                $outlet->phone = $data['phone'];
+            }
+            if (isset($data['kode'])) {
+                $outlet->kode = $data['kode'];
+            }
+            if (isset($data['prioritas'])) {
+                $outlet->prioritas = $data['prioritas'];
             }
 
             if ($file && $file->getError() === UPLOAD_ERR_OK) {
-                $filename = Upload::storeImage($file, 'outlets');
-                $outlet->gambar = $filename;
+                $relativePath = Upload::storeImage($file, 'outlets');
+                $outlet->gambar = $relativePath;
             }
 
             $outlet->save();
@@ -107,8 +119,8 @@ class OutletService
             Upload::deleteImage($outlet->gambar);
         }
         // Upload file baru
-        $filename = Upload::storeImage($file, 'outlets');
-        $outlet->gambar = $filename;
+        $relativePath = Upload::storeImage($file, 'outlets');
+        $outlet->gambar = $relativePath;
         $outlet->save();
 
         return JsonResponder::success($response, $outlet, 'Gambar outlet berhasil diupdate');
