@@ -49,6 +49,8 @@ class OrderService
                 'outlet_name' => $data['outlet_name'] ?? null,
                 'pic_name' => $data['pic_name'] ?? null,
                 'tanggal' => $data['tanggal'] ?? null,
+                'status_order' => 'new',
+                'keterangan' => $data['keterangan'] ?? null,
             ]);
 
             // Buat order items
@@ -83,6 +85,18 @@ class OrderService
         }
     }
 
+    public static function listOrdersByOutlet(Response $response, $outlet_id)
+    {
+        try {
+            $orders = Order::whereHas('orderItems', function ($query) use ($outlet_id) {
+                $query->where('outlet_id', $outlet_id);
+            })->with(['orderItems.product', 'orderItems.outlet'])->get();
+            return JsonResponder::success($response, $orders, 'Daftar order berdasarkan outlet berhasil diambil');
+        } catch (\Exception $e) {
+            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
+    }
+
     public static function getOrder(Response $response, $id)
     {
         try {
@@ -104,9 +118,59 @@ class OrderService
             if (!$order) {
                 return JsonResponder::error($response, 'Order tidak ditemukan', 404);
             }
+
+            // Update order fields
             $order->update($data);
+
+            // Handle items update if provided
+            if (isset($data['items']) && is_array($data['items'])) {
+                // Get existing item IDs
+                $existingItemIds = $order->orderItems->pluck('id')->toArray();
+                $updatedItemIds = [];
+
+                foreach ($data['items'] as $item) {
+                    if (!isset($item['product_id']) || !isset($item['outlet_id']) || !isset($item['quantity'])) {
+                        return JsonResponder::error($response, 'Data item tidak lengkap', 400);
+                    }
+
+                    if (isset($item['id']) && in_array($item['id'], $existingItemIds)) {
+                        // Update existing item
+                        $orderItem = OrderItem::find($item['id']);
+                        if ($orderItem) {
+                            $orderItem->update([
+                                'product_id' => $item['product_id'],
+                                'outlet_id' => $item['outlet_id'],
+                                'quantity' => $item['quantity'],
+                                'pic' => $item['pic'] ?? $orderItem->pic,
+                                'tanggal' => $item['tanggal'] ?? $orderItem->tanggal,
+                                'status' => $item['status'] ?? $orderItem->status,
+                            ]);
+                            $updatedItemIds[] = $item['id'];
+                        }
+                    } else {
+                        // Create new item
+                        $newItem = OrderItem::create([
+                            'order_id' => $order->id,
+                            'product_id' => $item['product_id'],
+                            'outlet_id' => $item['outlet_id'],
+                            'quantity' => $item['quantity'],
+                            'pic' => $item['pic'] ?? null,
+                            'tanggal' => $item['tanggal'] ?? Carbon::now(),
+                            'status' => $item['status'] ?? 'open',
+                        ]);
+                        $updatedItemIds[] = $newItem->id;
+                    }
+                }
+
+                // Delete items not in the update list
+                $itemsToDelete = array_diff($existingItemIds, $updatedItemIds);
+                if (!empty($itemsToDelete)) {
+                    OrderItem::whereIn('id', $itemsToDelete)->delete();
+                }
+            }
+
             $order->save();
-            return JsonResponder::success($response, $order, 'Status order berhasil diperbarui');
+            return JsonResponder::success($response, $order->load('orderItems'), 'Order berhasil diperbarui');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);
         }

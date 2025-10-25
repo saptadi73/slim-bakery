@@ -124,6 +124,8 @@ if (!$schema->hasTable('orders')) {
         $t->string('outlet_name')->nullable();
         $t->string('pic_name')->nullable();
         $t->timestamp('tanggal')->nullable();
+        $t->enum('status_order', ['new', 'pending', 'approved', 'rejected', 'completed'])->default('new');
+        $t->text('keterangan')->nullable();
         $t->timestamps();
     });
     echo "Tabel orders dibuat.\n";

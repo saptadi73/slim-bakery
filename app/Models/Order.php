@@ -8,7 +8,7 @@ class Order extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    protected $fillable = ['no_order', 'outlet_name', 'pic_name', 'tanggal'];  // Kolom yang bisa diisi
+    protected $fillable = ['no_order', 'outlet_name', 'pic_name', 'tanggal', 'status_order', 'keterangan'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
     protected $casts = [

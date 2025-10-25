@@ -40,6 +40,23 @@ return function (App $app) {
             }
         });
 
+        $ord->get('/list/{outlet_id}', function (Request $request, Response $response, array $args) use ($container) {
+            $outlet_id = (int)$args['outlet_id'];
+            $svc = $container->get(OrderService::class);
+            if ($outlet_id <= 0) {
+                return JsonResponder::error($response, 'ID outlet tidak valid', 400);
+            }
+            try {
+                return $svc->listOrdersByOutlet($response, $outlet_id);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        });
+
         $ord->get('/products', function (Request $request, Response $response) use ($container) {
             $svc = $container->get(OrderService::class);
             try {
@@ -120,6 +137,24 @@ return function (App $app) {
 
             try {
                 return $svc->updateOrder($response, $id, $data);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        })->add(new JwtMiddleware());
+
+        $ord->delete('/{id}', function (Request $request, Response $response, array $args) use ($container) {
+            $id = (int)$args['id'];
+            $svc = $container->get(OrderService::class);
+            if ($id <= 0) {
+                return JsonResponder::error($response, 'ID tidak valid', 400);
+            }
+
+            try {
+                return $svc->deleteOrder($response, $id);
             } catch (\Exception $e) {
                 return JsonResponder::error($response, [
                     'message' => $e->getMessage(),
