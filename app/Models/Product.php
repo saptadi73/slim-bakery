@@ -12,9 +12,9 @@ class Product extends Model
     protected $fillable = ['nama', 'kode','gambar', 'category_id'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
-    public function orders()
+    public function orderItems()
     {
-        return $this->hasMany(Order::class, 'product_id');
+        return $this->hasMany(OrderItem::class, 'product_id');
     }
     public function inventories()
     {

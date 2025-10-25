@@ -1,6 +1,9 @@
-- [x] Update app/Models/Outlet.php: Change fillable to include 'gambar_dir', 'gambar_nama' instead of 'gambar'
-- [x] Update app/Services/OutletService.php: Modify createOutlet to handle gambar_dir and gambar_nama
-- [x] Update app/Services/OutletService.php: Modify updateOutlet to handle gambar_dir and gambar_nama
-- [x] Update app/Services/OutletService.php: Modify updateOutletImage to handle gambar_dir and gambar_nama
-- [x] Update app/Services/OutletService.php: Modify deleteOutlet to use combined path for deletion
-- [x] Fix routes/outlets.php: Change createProduct to createOutlet
+- [x] Update database/migrations/migrasinextall.php: Create order_items table, modify orders table
+- [x] Create app/Models/OrderItem.php: New model for order items
+- [x] Update app/Models/Order.php: Add hasMany OrderItems, remove belongsTo product and outlet
+- [x] Update app/Models/Product.php: Add hasMany OrderItems
+- [x] Update app/Models/Outlet.php: Add hasMany OrderItems
+- [x] Update app/Services/OrderService.php: Modify all methods to use order_items
+- [x] Update routes/orders.php: Adjust routes if necessary
+- [x] Run migration to apply changes
+- [x] Test the changes

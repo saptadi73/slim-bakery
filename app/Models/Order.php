@@ -8,17 +8,16 @@ class Order extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    protected $fillable = ['outlet_id','status', 'quantity','tanggal','pic','product_id','no_order'];  // Kolom yang bisa diisi
+    protected $fillable = ['no_order', 'outlet_name', 'pic_name', 'tanggal'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
-    public function outlet()
-    {
-        return $this->belongsTo(Outlet::class, 'outlet_id');
-    }
+    protected $casts = [
+        'tanggal' => 'datetime',
+    ];
 
-    public function product()
+    public function orderItems()
     {
-        return $this->belongsTo(Product::class, 'product_id');
+        return $this->hasMany(OrderItem::class, 'order_id');
     }
 }
 

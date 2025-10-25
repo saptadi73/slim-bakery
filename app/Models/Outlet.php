@@ -15,9 +15,9 @@ class Outlet extends Model
     ];
     public $timestamps = true;
 
-    public function orders()
+    public function orderItems()
     {
-        return $this->hasMany(Order::class, 'outlet_id');
+        return $this->hasMany(OrderItem::class, 'outlet_id');
     }
 
     public function users()

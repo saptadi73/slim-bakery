@@ -31,6 +31,7 @@ Capsule::connection()->getPdo()->exec('SET CONSTRAINTS ALL DEFERRED');
 Capsule::schema()->dropIfExists('user_outlet');
 Capsule::schema()->dropIfExists('delivers');
 Capsule::schema()->dropIfExists('providers');
+Capsule::schema()->dropIfExists('order_items');
 Capsule::schema()->dropIfExists('orders');
 Capsule::schema()->dropIfExists('product_movings');
 Capsule::schema()->dropIfExists('inventories');
@@ -119,19 +120,33 @@ if (!$schema->hasTable('product_movings')) {
 if (!$schema->hasTable('orders')) {
     $schema->create('orders', function ($t) {
         $t->bigIncrements('id');
-        $t->unsignedBigInteger('outlet_id');
+        $t->string('no_order')->unique();
+        $t->string('outlet_name')->nullable();
+        $t->string('pic_name')->nullable();
+        $t->timestamp('tanggal')->nullable();
+        $t->timestamps();
+    });
+    echo "Tabel orders dibuat.\n";
+}
+
+/** order_items table */
+if (!$schema->hasTable('order_items')) {
+    $schema->create('order_items', function ($t) {
+        $t->bigIncrements('id');
+        $t->unsignedBigInteger('order_id');
         $t->unsignedBigInteger('product_id');
+        $t->unsignedBigInteger('outlet_id');
         $t->integer('quantity')->default(0);
         $t->date('tanggal')->nullable();
         $t->string('pic')->nullable();
-        $t->string('no_order')->unique();
         $t->enum('status', ['open', 'processed', 'delivered'])->default('open');
         $t->timestamps();
 
-        $t->foreign('outlet_id')->references('id')->on('outlets')->onDelete('cascade');
+        $t->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
         $t->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
+        $t->foreign('outlet_id')->references('id')->on('outlets')->onDelete('cascade');
     });
-    echo "Tabel orders dibuat.\n";
+    echo "Tabel order_items dibuat.\n";
 }
 /** providers table */
 if (!$schema->hasTable('providers')) {

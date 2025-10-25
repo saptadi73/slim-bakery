@@ -94,6 +94,41 @@ return function (App $app) {
             }
         });
 
+        $ord->get('/leftjoin/{id}', function (Request $request, Response $response, array $args) use ($container){
+            $id = (int)$args['id'];
+            $svc = $container->get(OrderService::class);
+
+            try {
+                $leftJoinOrders = $svc->leftJoinProductOrders($response,$id);
+                return $leftJoinOrders;
+            } catch (\Throwable $th) {
+                return JsonResponder::error($response, [
+                    'message' => $th->getMessage(),
+                    'type'    => get_class($th),
+                    'file'    => $th->getFile() . ':' . $th->getLine(),
+                ], 500);
+            }
+        });
+
+        $ord->put('/{id}', function (Request $request, Response $response, array $args) use ($container) {
+            $id = (int)$args['id'];
+            $svc = $container->get(OrderService::class);
+            $data = RequestHelper::getJsonBody($request);
+            if ($id <= 0) {
+                return JsonResponder::error($response, 'ID tidak valid', 400);
+            }
+
+            try {
+                return $svc->updateOrder($response, $id, $data);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        })->add(new JwtMiddleware());
+
         $ord->get('/{id}', function (Request $request, Response $response, array $args) use ($container) {
             $id = (int)$args['id'];
             $svc = $container->get(OrderService::class);
