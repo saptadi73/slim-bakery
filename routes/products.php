@@ -31,6 +31,11 @@ return function (App $app) {
                 ], 500);
             }
         })->add(new JwtMiddleware());
+
+        $cust->get('/summary', function (Request $request, Response $response) {
+            return ProductService::getProductSummary($response);
+        });
+
         $cust->get('/{id}', function (Request $request, Response $response, array $args) {
             $id = (int)$args['id'];
             return ProductService::getProduct($response, $id);
@@ -52,7 +57,7 @@ return function (App $app) {
                 ], 500);
             }
         })->add(new JwtMiddleware());
-        
+
         $cust->post('/update/image/{id}', function (Request $request, Response $response, array $args) use ($container) {
             $id = (int)$args['id'];
             $svc = $container->get(ProductService::class);
@@ -63,6 +68,7 @@ return function (App $app) {
                 return JsonResponder::error($response, [
                     'message' => $e->getMessage(),
                     'type'    => get_class($e),
+                    'data'    => $args,
                     'file'    => $e->getFile() . ':' . $e->getLine(),
                 ], 500);
             }
@@ -72,5 +78,26 @@ return function (App $app) {
             $id = (int)$args['id'];
             return ProductService::deleteProduct($response, $id);
         })->add(new JwtMiddleware());
+
+        $cust->post('/moving', function (Request $request, Response $response) use ($container) {
+            $svc = $container->get(\App\Services\StockService::class);
+            $data = RequestHelper::getJsonBody($request);
+            try {
+                return $svc->createProductMoving($response, $data);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'data'    => $data,
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        })->add(new JwtMiddleware());
+
+        $cust->get('/inventory/{id}', function (Request $request, Response $response, array $args) use($container) {
+            $id = (int)$args['id'];
+            $svc = $container->get(\App\Services\StockService::class);
+            return $svc->getInventoryByProductId($response, $id);
+        });
     });
 };

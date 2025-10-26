@@ -287,13 +287,6 @@ class SeedService
             ['nama' => 'BROWNIES CHOCO CREAM', 'kode' => 'BCHC'],
             ['nama' => 'BROWNIES BLACKFOREST', 'kode' => 'BBFR'],
             ['nama' => 'BROWNIES KEJU', 'kode' => 'BRKJ'],
-            ['nama' => 'BROWNIES KACANG', 'kode' => 'BRKG'],
-            ['nama' => 'BROWNIES OREO', 'kode' => 'BROR'],
-            ['nama' => 'BROWNIES MIXBERRIES', 'kode' => 'BRMB'],
-            ['nama' => 'BROWNIES TIRAMISU', 'kode' => 'BRTM'],
-            ['nama' => 'BROWNIES CARAMEL', 'kode' => 'BRCR'],
-            ['nama' => 'BROWNIES CHOCO CREAM', 'kode' => 'BRCC'],
-            ['nama' => 'BROWNIES BLACKFOREST', 'kode' => 'BRBF'],
             ['nama' => 'DONAT MINI', 'kode' => 'DMNI'],
             ['nama' => 'DONAT JUMBO', 'kode' => 'DJMB'],
             ['nama' => 'DONAT ISI COKLAT', 'kode' => 'DICK'],
@@ -379,5 +372,25 @@ class SeedService
 
         Outlet::query()->insert($outlet);
         return Outlet::all();
+    }
+
+    public static function isiInventory() {
+        $now = Carbon::now();
+        $products = Product::all();
+        $inventoryData = [];
+
+        foreach ($products as $product) {
+            $inventoryData[] = [
+                'product_id' => $product->id,
+                'quantity' => 0,
+                'tanggal' => $now,
+                'pic' => 'System',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        \App\Models\Inventory::insert($inventoryData);
+        return 'Inventory seeded successfully for all products with default quantity 0';
     }
 }

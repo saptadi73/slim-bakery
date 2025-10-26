@@ -194,6 +194,7 @@ class OrderService
     {
         try {
             $query = OrderItem::join('products as pro', 'order_items.product_id', '=', 'pro.id')
+                ->where('order_items.status', 'open')
                 ->selectRaw('SUM(order_items.quantity) as quantity,pro.kode,pro.gambar, pro.nama as product_name, pro.id as product_id')
                 ->groupBy('order_items.product_id', 'pro.nama', 'pro.kode', 'pro.gambar', 'pro.id')
                 ->get();
