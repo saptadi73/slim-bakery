@@ -186,6 +186,41 @@ return function (App $app) {
             }
         });
 
+        $ord->post('/providers', function (Request $request, Response $response) use ($container) {
+            $svc = $container->get(OrderService::class);
+            $data = RequestHelper::getJsonBody($request);
+            try {
+                return $svc->createProviders($response, $data);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'data'    => $data,
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        })->add(new JwtMiddleware());
+
+        $ord->put('/providers/{id}', function (Request $request, Response $response, array $args) use ($container) {
+            $id = (int)$args['id'];
+            $svc = $container->get(OrderService::class);
+            $data = RequestHelper::getJsonBody($request);
+            if ($id <= 0) {
+                return JsonResponder::error($response, 'ID provider tidak valid', 400);
+            }
+
+            try {
+                return $svc->updateProvider($response, $id, $data);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'data'    => $data,
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        })->add(new JwtMiddleware());
+
     });
 }
 ?>

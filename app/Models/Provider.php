@@ -7,17 +7,17 @@ class Provider extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    protected $fillable = ['order_id', 'quantity','tanggal','pic','nopro'];  // Kolom yang bisa diisi
+    protected $fillable = ['order_items_id', 'quantity','tanggal','pic'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
     public function delivers()
     {
         return $this->hasMany(Deliver::class, 'provider_id');
     }
-    
-    public function orders()
+
+    public function orderItem()
     {
-        return $this->belongsTo(Order::class, 'order_id');
+        return $this->belongsTo(OrderItem::class, 'order_items_id');
     }
 }
 

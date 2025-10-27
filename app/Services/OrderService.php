@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Provider;
 use App\Supports\JsonResponder;
 use Psr\Http\Message\ResponseInterface as Response;
 use Carbon\Carbon;
@@ -230,12 +231,12 @@ class OrderService
         try {
             $query = OrderItem::join('products as pro', 'order_items.product_id', '=', 'pro.id')
                 ->join('outlets as otl', 'order_items.outlet_id', '=', 'otl.id')
-                ->selectRaw('SUM(order_items.quantity) as total_quantity,otl.gambar, otl.id as outlet_id, otl.nama as outlet_name,otl.prioritas as outlet_priority')
+                ->select('order_items.id as order_items_id', 'order_items.quantity', 'order_items.status', 'otl.gambar', 'otl.id as outlet_id', 'otl.nama as outlet_name', 'otl.prioritas as outlet_priority')
                 ->where('pro.id', $id)
-                ->groupBy('otl.id', 'otl.nama', 'otl.gambar', 'otl.prioritas')
+                ->where('order_items.status', 'open')
                 ->orderBy('otl.prioritas', 'desc')
                 ->get();
-            return JsonResponder::success($response, $query, 'Jumlah order per produk berhasil diambil');
+            return JsonResponder::success($response, $query, 'Detail order items per produk berhasil diambil');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);
         }
@@ -266,6 +267,111 @@ class OrderService
             return JsonResponder::success($response, $leftJoinProducts,'Semua Product untuk diorders');
         } catch (\Throwable $th) {
             return JsonResponder::error($response, $th->getMessage(), 500);
+        }
+    }
+
+    public static function createProviders(Response $response, $data)
+    {
+        // Validasi data
+        if (!isset($data['providers']) || !is_array($data['providers']) || empty($data['providers'])) {
+            return JsonResponder::error($response, 'Data providers tidak lengkap', 400);
+        }
+
+        $createdProviders = [];
+        $updatedOrderItems = [];
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($data['providers'] as $providerData) {
+                // Validasi setiap provider data
+                if (!isset($providerData['order_items_id']) || !isset($providerData['quantity'])) {
+                    return JsonResponder::error($response, 'Data provider tidak lengkap: order_items_id dan quantity diperlukan', 400);
+                }
+
+                $orderItemId = $providerData['order_items_id'];
+                $quantity = $providerData['quantity'];
+
+                // Cek apakah order_item ada
+                $orderItem = OrderItem::find($orderItemId);
+                if (!$orderItem) {
+                    return JsonResponder::error($response, "Order item dengan ID {$orderItemId} tidak ditemukan", 404);
+                }
+
+                // Cek apakah quantity provider tidak melebihi quantity order
+                if ($quantity > $orderItem->quantity) {
+                    return JsonResponder::error($response, "Quantity provider ({$quantity}) tidak boleh melebihi quantity order ({$orderItem->quantity}) untuk order item ID {$orderItemId}", 400);
+                }
+
+                // Buat provider
+                $provider = Provider::create([
+                    'order_items_id' => $orderItemId,
+                    'quantity' => $quantity,
+                    'tanggal' => $providerData['tanggal'] ?? Carbon::now(),
+                    'pic' => $providerData['pic'] ?? null,
+                ]);
+
+                $createdProviders[] = $provider;
+
+                // Update status order item menjadi 'provided'
+                $orderItem->status = 'provided';
+                $orderItem->save();
+
+                $updatedOrderItems[] = $orderItem;
+            }
+
+            DB::commit();
+
+            return JsonResponder::success($response, [
+                'providers' => $createdProviders,
+                'updated_order_items' => $updatedOrderItems
+            ], 'Provider berhasil dibuat dan status order item diperbarui menjadi provided');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
+    }
+
+    public static function updateProvider(Response $response, $id, $data)
+    {
+        try {
+            $provider = Provider::find($id);
+            if (!$provider) {
+                return JsonResponder::error($response, 'Provider tidak ditemukan', 404);
+            }
+
+            // Validasi data update
+            $updateData = [];
+
+            if (isset($data['quantity'])) {
+                $quantity = $data['quantity'];
+                // Cek apakah quantity provider tidak melebihi quantity order
+                $orderItem = OrderItem::find($provider->order_items_id);
+                if ($orderItem && $quantity > $orderItem->quantity) {
+                    return JsonResponder::error($response, "Quantity provider ({$quantity}) tidak boleh melebihi quantity order ({$orderItem->quantity})", 400);
+                }
+                $updateData['quantity'] = $quantity;
+            }
+
+            if (isset($data['tanggal'])) {
+                $updateData['tanggal'] = $data['tanggal'];
+            }
+
+            if (isset($data['pic'])) {
+                $updateData['pic'] = $data['pic'];
+            }
+
+            if (empty($updateData)) {
+                return JsonResponder::error($response, 'Tidak ada data yang akan diupdate', 400);
+            }
+
+            $provider->update($updateData);
+
+            return JsonResponder::success($response, $provider, 'Provider berhasil diperbarui');
+
+        } catch (\Exception $e) {
+            return JsonResponder::error($response, $e->getMessage(), 500);
         }
     }
 }
