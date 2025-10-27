@@ -7,3 +7,17 @@
 - [x] Update routes/orders.php: Adjust routes if necessary
 - [x] Run migration to apply changes
 - [x] Test the changes
+- [x] Create database/migrations/migration_delivery_orders.php: Migration for delivery_orders and delivery_order_items tables
+- [x] Create app/Models/DeliveryOrder.php: Model for delivery orders
+- [x] Create app/Models/DeliveryOrderItem.php: Model for delivery order items
+- [x] Update app/Models/Provider.php: Add hasMany DeliveryOrderItems relationship
+- [x] Run migration_delivery_orders.php to create tables
+- [x] Create app/Services/DeliveryOrderService.php: Service for create, update, delete delivery orders
+- [x] Create database/migrations/migration_receives.php: Migration for receives and receive_items tables
+- [x] Create app/Models/Receive.php: Model for receives
+- [x] Create app/Models/ReceiveItem.php: Model for receive items
+- [x] Update app/Models/DeliveryOrder.php: Add hasMany receives relationship
+- [x] Update app/Models/DeliveryOrderItem.php: Add hasMany receiveItems relationship
+- [x] Create app/Services/ReceiveService.php: Service for create, update, delete receives
+- [x] Create routes/receives.php: Routes for /receives group
+- [x] Update routes/index.php: Include receives.php

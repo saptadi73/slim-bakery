@@ -19,6 +19,11 @@ class Provider extends Model
     {
         return $this->belongsTo(OrderItem::class, 'order_items_id');
     }
+
+    public function deliveryOrderItems()
+    {
+        return $this->hasMany(DeliveryOrderItem::class, 'provider_id');
+    }
 }
 
 ?>

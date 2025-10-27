@@ -86,12 +86,23 @@ class OrderService
         }
     }
 
+    public static function listAllOrders(Response $response)
+    {
+        try {
+            $orders = Order::with(['orderItems.product', 'orderItems.outlet'])->get();
+            return JsonResponder::success($response, $orders, 'Daftar semua order berhasil diambil');
+        } catch (\Exception $e) {
+            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
+    }
+
     public static function listOrdersByOutlet(Response $response, $outlet_id)
     {
         try {
             $orders = Order::whereHas('orderItems', function ($query) use ($outlet_id) {
                 $query->where('outlet_id', $outlet_id);
             })->with(['orderItems.product', 'orderItems.outlet'])->get();
+
             return JsonResponder::success($response, $orders, 'Daftar order berdasarkan outlet berhasil diambil');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);
@@ -106,6 +117,20 @@ class OrderService
             if (!$order) {
                 return JsonResponder::error($response, 'Order tidak ditemukan', 404);
             }
+
+            // Load providers for all order items to avoid N+1 queries
+            $orderItemIds = $order->orderItems->pluck('id');
+            $providers = Provider::whereIn('order_items_id', $orderItemIds)->get()->groupBy('order_items_id');
+
+            // Add provider quantity and provider_id for each order item
+            foreach ($order->orderItems as $item) {
+                $itemProviders = $providers[$item->id] ?? collect();
+                $providerQuantity = $itemProviders->sum('quantity');
+                $item->quantity_order = $item->quantity;
+                $item->quantity_provider = $providerQuantity;
+                $item->provider_id = $itemProviders->first()->id ?? null;
+            }
+
             return JsonResponder::success($response, $order, 'Detail order berhasil diambil');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);
@@ -329,6 +354,36 @@ class OrderService
 
         } catch (\Exception $e) {
             DB::rollback();
+            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
+    }
+
+    public static function getOrderWithProductId(Response $response, $id)
+    {
+        try {
+            $order = Order::with(['orderItems' => function ($query) {
+                $query->select('id', 'order_id', 'product_id', 'outlet_id', 'quantity', 'pic', 'tanggal', 'status', 'created_at', 'updated_at');
+            }, 'orderItems.outlet'])->find($id);
+
+            if (!$order) {
+                return JsonResponder::error($response, 'Order tidak ditemukan', 404);
+            }
+
+            // Load providers for all order items to avoid N+1 queries
+            $orderItemIds = $order->orderItems->pluck('id');
+            $providers = Provider::whereIn('order_items_id', $orderItemIds)->get()->groupBy('order_items_id');
+
+            // Add provider quantity and provider_id for each order item, including those without providers
+            foreach ($order->orderItems as $item) {
+                $itemProviders = $providers[$item->id] ?? collect();
+                $providerQuantity = $itemProviders->sum('quantity');
+                $item->quantity_order = $item->quantity;
+                $item->quantity_provider = $providerQuantity;
+                $item->provider_id = $itemProviders->first()->id ?? null;
+            }
+
+            return JsonResponder::success($response, $order, 'Detail order dengan product_id berhasil diambil');
+        } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);
         }
     }

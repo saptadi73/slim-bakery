@@ -40,6 +40,19 @@ return function (App $app) {
             }
         });
 
+        $ord->get('/list-all', function (Request $request, Response $response) use ($container) {
+            $svc = $container->get(OrderService::class);
+            try {
+                return $svc->listAllOrders($response);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        });
+
         $ord->get('/list/{outlet_id}', function (Request $request, Response $response, array $args) use ($container) {
             $outlet_id = (int)$args['outlet_id'];
             $svc = $container->get(OrderService::class);
@@ -173,6 +186,28 @@ return function (App $app) {
 
             try {
                 $order = $svc->getOrder($response, $id);
+                if (!$order) {
+                    return JsonResponder::error($response, 'Order tidak ditemukan', 404);
+                }
+                return $order;
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        });
+
+        $ord->get('/{id}/with-product-id', function (Request $request, Response $response, array $args) use ($container) {
+            $id = (int)$args['id'];
+            $svc = $container->get(OrderService::class);
+            if ($id <= 0) {
+                return JsonResponder::error($response, 'ID tidak valid', 400);
+            }
+
+            try {
+                $order = $svc->getOrderWithProductId($response, $id);
                 if (!$order) {
                     return JsonResponder::error($response, 'Order tidak ditemukan', 404);
                 }
