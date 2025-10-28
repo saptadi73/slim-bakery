@@ -101,7 +101,15 @@ class DeliveryOrderService
     public static function listDeliveryOrders(Response $response)
     {
         try {
-            $deliveryOrders = DeliveryOrder::with(['deliveryOrderItems.provider'])->get();
+            $deliveryOrders = DeliveryOrder::with(['deliveryOrderItems.provider.orderItem.order', 'deliveryOrderItems.provider.orderItem.outlet'])->get();
+
+            // Add outlet_name to each delivery order item
+            foreach ($deliveryOrders as $deliveryOrder) {
+                foreach ($deliveryOrder->deliveryOrderItems as $item) {
+                    $item->outlet_name = $item->provider->orderItem->outlet->nama ?? null;
+                }
+            }
+
             return JsonResponder::success($response, $deliveryOrders, 'Daftar delivery order berhasil diambil');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);

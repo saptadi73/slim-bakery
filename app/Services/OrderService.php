@@ -358,6 +358,55 @@ class OrderService
         }
     }
 
+    public static function createSingleProvider(Response $response, $data)
+    {
+        // Validasi data
+        if (!isset($data['order_items_id']) || !isset($data['quantity'])) {
+            return JsonResponder::error($response, 'Data provider tidak lengkap: order_items_id dan quantity diperlukan', 400);
+        }
+
+        $orderItemId = $data['order_items_id'];
+        $quantity = $data['quantity'];
+
+        try {
+            DB::beginTransaction();
+
+            // Cek apakah order_item ada
+            $orderItem = OrderItem::find($orderItemId);
+            if (!$orderItem) {
+                return JsonResponder::error($response, "Order item dengan ID {$orderItemId} tidak ditemukan", 404);
+            }
+
+            // Cek apakah quantity provider tidak melebihi quantity order
+            if ($quantity > $orderItem->quantity) {
+                return JsonResponder::error($response, "Quantity provider ({$quantity}) tidak boleh melebihi quantity order ({$orderItem->quantity}) untuk order item ID {$orderItemId}", 400);
+            }
+
+            // Buat provider
+            $provider = Provider::create([
+                'order_items_id' => $orderItemId,
+                'quantity' => $quantity,
+                'tanggal' => $data['tanggal'] ?? Carbon::now(),
+                'pic' => $data['pic'] ?? null,
+            ]);
+
+            // Update status order item menjadi 'provided'
+            $orderItem->status = 'provided';
+            $orderItem->save();
+
+            DB::commit();
+
+            return JsonResponder::success($response, [
+                'provider' => $provider,
+                'updated_order_item' => $orderItem
+            ], 'Provider berhasil dibuat dan status order item diperbarui menjadi provided');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
+    }
+
     public static function getOrderWithProductId(Response $response, $id)
     {
         try {
