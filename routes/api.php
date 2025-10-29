@@ -121,6 +121,26 @@ return function (App $app) {
         return JsonResponder::error($response, 'User not found', 404);
     })->add(new JwtMiddleware());
 
+    // Ganti password pengguna
+    $app->post('/change-password', function ($request, $response) {
+        $jwt = $request->getAttribute('jwt');
+        $userId = $jwt['sub']; // Ambil user ID dari JWT
+
+        $data = RequestHelper::getJsonBody($request);
+
+        // Validasi input
+        if (empty($data['old_password']) || empty($data['new_password'])) {
+            return JsonResponder::error($response, 'Old password and new password are required', 400);
+        }
+
+        // Panggil service untuk ganti password
+        $result = UserService::changePassword($userId, $data['old_password'], $data['new_password']);
+        if ($result['success']) {
+            return JsonResponder::success($response, [], $result['message']);
+        }
+        return JsonResponder::error($response, $result['message'], 400);
+    })->add(new JwtMiddleware());
+
     $app->get('/roles', function ($request, $response) {
         try {
             return RoleService::listRoles($response);

@@ -351,11 +351,20 @@ if (!$schema->hasTable('receives')) {
         $t->string('pic');
         $t->timestamp('tanggal');
         $t->unsignedBigInteger('delivery_order_id');
+        $t->text('keterangan')->nullable();
         $t->timestamps();
 
         $t->foreign('delivery_order_id')->references('id')->on('delivery_orders')->onDelete('cascade');
     });
     echo "Tabel receives dibuat.\n";
+} else {
+    // Jika tabel sudah ada, tambahkan kolom keterangan jika belum ada
+    if (!$schema->hasColumn('receives', 'keterangan')) {
+        $schema->table('receives', function ($table) {
+            $table->text('keterangan')->nullable();
+        });
+        echo "Kolom keterangan berhasil ditambahkan ke tabel receives.\n";
+    }
 }
 
 /** receive_items table */

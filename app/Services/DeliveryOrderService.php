@@ -124,6 +124,34 @@ class DeliveryOrderService
         }
     }
 
+    public static function listDeliveryOrdersByOutlet(Response $response, $outlet_id)
+    {
+        try {
+            $deliveryOrders = DeliveryOrder::with(['deliveryOrderItems.provider.orderItem.order', 'deliveryOrderItems.provider.orderItem.outlet', 'receives'])
+                ->whereHas('deliveryOrderItems.provider.orderItem', function ($query) use ($outlet_id) {
+                    $query->where('outlet_id', $outlet_id);
+                })
+                ->get();
+
+            // Add outlet_name to each delivery order item
+            foreach ($deliveryOrders as $deliveryOrder) {
+                foreach ($deliveryOrder->deliveryOrderItems as $item) {
+                    $item->outlet_name = $item->provider->orderItem->outlet->nama ?? null;
+                }
+                // Add receives_id if exists (first receive by min id)
+                if ($deliveryOrder->receives && $deliveryOrder->receives->count() > 0) {
+                    $deliveryOrder->receives_id = $deliveryOrder->receives->min('id');
+                } else {
+                    $deliveryOrder->receives_id = null;
+                }
+            }
+
+            return JsonResponder::success($response, $deliveryOrders, 'Daftar delivery order berdasarkan outlet berhasil diambil');
+        } catch (\Exception $e) {
+            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
+    }
+
     public static function getDeliveryOrder(Response $response, $id)
     {
         try {
@@ -250,7 +278,7 @@ class DeliveryOrderService
             // Update delivery order status to closed
             $deliveryOrder->update(['status' => 'closed']);
 
-            // Find the associated order and update its status to closed
+            // Find the associated order and update its status to completed
             $orderIds = [];
             foreach ($deliveryOrder->deliveryOrderItems as $item) {
                 if ($item->provider && $item->provider->orderItem && $item->provider->orderItem->order) {
@@ -262,7 +290,7 @@ class DeliveryOrderService
             foreach ($orderIds as $orderId) {
                 $order = Order::find($orderId);
                 if ($order) {
-                    $order->update(['status_order' => 'closed']);
+                    $order->update(['status_order' => 'completed']);
                 }
             }
 

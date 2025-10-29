@@ -39,6 +39,24 @@ return function (App $app) {
             }
         });
 
+        $do->get('/list/{outlet_id}', function (Request $request, Response $response, array $args) use ($container) {
+            $outlet_id = (int)$args['outlet_id'];
+            $svc = $container->get(DeliveryOrderService::class);
+            if ($outlet_id <= 0) {
+                return JsonResponder::error($response, 'ID outlet tidak valid', 400);
+            }
+
+            try {
+                return $svc->listDeliveryOrdersByOutlet($response, $outlet_id);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        });
+
         $do->get('/{id}', function (Request $request, Response $response, array $args) use ($container) {
             $id = (int)$args['id'];
             $svc = $container->get(DeliveryOrderService::class);

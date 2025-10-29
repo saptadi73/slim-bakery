@@ -17,7 +17,7 @@ class ReportService
             $orders = Order::with([
                 'orderItems.product.category',
                 'orderItems.providers.deliveryOrderItems.deliveryOrder',
-                'orderItems.providers.receiveItems.receive'
+                'orderItems.providers.deliveryOrderItems.receiveItems.receive'
             ])->get();
 
             $summary = [
@@ -97,12 +97,14 @@ class ReportService
                         $summary['items_delivered']++;
                     }
 
-                    // Check if received (has receive item)
+                    // Check if received (has receive item through delivery order items)
                     $receivedQuantity = 0;
                     foreach ($item->providers as $provider) {
-                        foreach ($provider->receiveItems as $receiveItem) {
-                            if ($receiveItem->receive) {
-                                $receivedQuantity += $receiveItem->quantity;
+                        foreach ($provider->deliveryOrderItems as $deliveryOrderItem) {
+                            foreach ($deliveryOrderItem->receiveItems as $receiveItem) {
+                                if ($receiveItem->receive) {
+                                    $receivedQuantity += $receiveItem->quantity;
+                                }
                             }
                         }
                     }

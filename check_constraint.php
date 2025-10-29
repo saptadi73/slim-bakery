@@ -20,7 +20,7 @@ $c->setAsGlobal();
 $c->bootEloquent();
 
 try {
-    $constraints = Capsule::select('SELECT conname, conrelid::regclass AS table_name, pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conname LIKE \'%order_items%\' AND contype = \'c\';');
+    $constraints = Capsule::select('SELECT conname, conrelid::regclass AS table_name, pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conname LIKE \'%receives%\' AND contype = \'c\';');
     foreach ($constraints as $constraint) {
         echo 'Table: ' . $constraint->table_name . ', Constraint: ' . $constraint->conname . ', Definition: ' . $constraint->definition . PHP_EOL;
     }

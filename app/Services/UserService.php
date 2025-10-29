@@ -77,4 +77,24 @@ class UserService
         }
         return false;
     }
+
+    // Mengubah password pengguna
+    public static function changePassword($userId, $oldPassword, $newPassword)
+    {
+        $user = self::findById($userId);
+        if (!$user) {
+            return ['success' => false, 'message' => 'User not found'];
+        }
+
+        // Verifikasi password lama
+        if (!password_verify($oldPassword, $user->password)) {
+            return ['success' => false, 'message' => 'Old password is incorrect'];
+        }
+
+        // Hash password baru dan update
+        $user->password = password_hash($newPassword, PASSWORD_DEFAULT);
+        $user->save();
+
+        return ['success' => true, 'message' => 'Password changed successfully'];
+    }
 }
