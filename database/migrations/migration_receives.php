@@ -33,6 +33,7 @@ if (!$schema->hasTable('receives')) {
         $t->string('pic');
         $t->timestamp('tanggal');
         $t->unsignedBigInteger('delivery_order_id');
+        $t->text('keterangan')->nullable();
         $t->timestamps();
 
         $t->foreign('delivery_order_id')->references('id')->on('delivery_orders')->onDelete('cascade');

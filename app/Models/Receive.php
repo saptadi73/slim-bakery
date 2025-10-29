@@ -8,7 +8,7 @@ class Receive extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    protected $fillable = ['no_rec', 'pic', 'tanggal', 'delivery_order_id'];  // Kolom yang bisa diisi
+    protected $fillable = ['no_rec', 'pic', 'tanggal', 'delivery_order_id', 'keterangan'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
     protected $casts = [

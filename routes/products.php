@@ -36,6 +36,10 @@ return function (App $app) {
             return ProductService::getProductSummary($response);
         });
 
+        $cust->get('/summary/roti', function (Request $request, Response $response) {
+            return ProductService::getProductSummaryCategoryRoti($response);
+        });
+
         $cust->get('/{id}', function (Request $request, Response $response, array $args) {
             $id = (int)$args['id'];
             return ProductService::getProduct($response, $id);

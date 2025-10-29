@@ -177,5 +177,34 @@ class ProductService
         }
     }
 
+    public static function getProductSummaryCategoryRoti(Response $response)
+    {
+        try {
+            $products = Product::with('category')->where('category_id', 2)->get();
+
+            $summary = $products->map(function ($product) {
+                // Get stock from inventory
+                $inventory = \App\Models\Inventory::where('product_id', $product->id)->first();
+                $stock = $inventory ? $inventory->quantity : 0;
+
+                // Get total orders (sum of quantities from order_items where status is 'open')
+                $totalOrders = \App\Models\OrderItem::where('product_id', $product->id)->where('status', 'open')->sum('quantity');
+
+                return [
+                    'id' => $product->id,
+                    'nama' => $product->nama,
+                    'kode' => $product->kode,
+                    'stock' => $stock,
+                    'total_orders' => $totalOrders,
+                    'category' => $product->category ? $product->category->nama : null,
+                ];
+            });
+
+            return JsonResponder::success($response, $summary, 'Ringkasan produk kategori roti berhasil diambil');
+        } catch (\Exception $e) {
+            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
+    }
+
 
 }

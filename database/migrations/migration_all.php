@@ -310,6 +310,7 @@ if (!$schema->hasTable('delivery_orders')) {
         $t->string('no_do')->unique();
         $t->string('pic');
         $t->timestamp('tanggal');
+        $t->enum('status', ['open', 'closed'])->default('open');
         $t->timestamps();
     });
     echo "Tabel delivery_orders dibuat.\n";
@@ -321,6 +322,7 @@ if (!$schema->hasTable('delivery_order_items')) {
         $t->bigIncrements('id');
         $t->unsignedBigInteger('delivery_order_id');
         $t->unsignedBigInteger('provider_id');
+        $t->unsignedBigInteger('product_id');
         $t->integer('quantity')->default(0);
         $t->string('pic');
         $t->date('tanggal');
@@ -328,6 +330,7 @@ if (!$schema->hasTable('delivery_order_items')) {
 
         $t->foreign('delivery_order_id')->references('id')->on('delivery_orders')->onDelete('cascade');
         $t->foreign('provider_id')->references('id')->on('providers')->onDelete('cascade');
+        $t->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
     });
     echo "Tabel delivery_order_items dibuat.\n";
 }

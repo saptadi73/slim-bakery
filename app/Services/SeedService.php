@@ -319,6 +319,7 @@ class SeedService
         ];
         $product = array_map(function ($r) use ($now) {
             return $r + [
+                'category_id' => 1, // Assuming category with id 1 exists
                 'created_at' => $now,
                 'updated_at' => $now,
             ];

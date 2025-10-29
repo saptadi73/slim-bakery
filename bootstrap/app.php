@@ -11,6 +11,8 @@ use App\Services\OrderService;
 use App\Services\CategoryService;
 use App\Services\StockService;
 use App\Services\DeliveryOrderService;
+use App\Services\ReceiveService;
+use App\Services\ReportService;
 use Pimple\Container as PimpleContainer;
 use Pimple\Psr11\Container as Psr11Container;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -36,6 +38,8 @@ $pimple[OrderService::class] = fn($c) => new OrderService();
 $pimple[CategoryService::class] = fn($c) => new CategoryService();
 $pimple[StockService::class] = fn($c) => new StockService();
 $pimple[DeliveryOrderService::class] = fn($c) => new DeliveryOrderService();
+$pimple[ReceiveService::class] = fn($c) => new ReceiveService();
+$pimple[ReportService::class] = fn($c) => new ReportService();
 // If your CorsMiddleware needs deps, wire them here too, e.g.:
 // $pimple[CorsMiddleware::class] = fn($c) => new CorsMiddleware(/* deps */);
 

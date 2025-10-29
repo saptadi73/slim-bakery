@@ -57,6 +57,24 @@ return function (App $app) {
             }
         });
 
+        $rec->get('/delivery-order/{delivery_order_id}', function (Request $request, Response $response, array $args) use ($container) {
+            $deliveryOrderId = (int)$args['delivery_order_id'];
+            $svc = $container->get(ReceiveService::class);
+            if ($deliveryOrderId <= 0) {
+                return JsonResponder::error($response, 'ID delivery order tidak valid', 400);
+            }
+
+            try {
+                return $svc->getReceiveByDeliveryOrderId($response, $deliveryOrderId);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        });
+
         $rec->put('/{id}', function (Request $request, Response $response, array $args) use ($container) {
             $id = (int)$args['id'];
             $svc = $container->get(ReceiveService::class);

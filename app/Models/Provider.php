@@ -24,6 +24,11 @@ class Provider extends Model
     {
         return $this->hasMany(DeliveryOrderItem::class, 'provider_id');
     }
+
+    public function receiveItems()
+    {
+        return $this->hasMany(ReceiveItem::class, 'delivery_order_items_id');
+    }
 }
 
 ?>

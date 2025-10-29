@@ -70,6 +70,7 @@ try {
     $deliveryOrderItem = new \App\Models\DeliveryOrderItem();
     $deliveryOrderItem->delivery_order_id = $deliveryOrder->id;
     $deliveryOrderItem->provider_id = 1; // Assuming provider with id 1 exists
+    $deliveryOrderItem->product_id = 1; // Assuming product with id 1 exists
     $deliveryOrderItem->quantity = 10;
     $deliveryOrderItem->pic = 'Test PIC Item';
     $deliveryOrderItem->tanggal = \Carbon\Carbon::now()->toDateString();

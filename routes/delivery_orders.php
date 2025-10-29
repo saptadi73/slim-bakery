@@ -94,5 +94,23 @@ return function (App $app) {
                 ], 500);
             }
         })->add(new JwtMiddleware());
+
+        $do->post('/{id}/close', function (Request $request, Response $response, array $args) use ($container) {
+            $id = (int)$args['id'];
+            $svc = $container->get(DeliveryOrderService::class);
+            if ($id <= 0) {
+                return JsonResponder::error($response, 'ID tidak valid', 400);
+            }
+
+            try {
+                return $svc->closeDeliveryOrder($response, $id);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        })->add(new JwtMiddleware());
     });
 };

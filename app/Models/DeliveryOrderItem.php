@@ -8,7 +8,7 @@ class DeliveryOrderItem extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    protected $fillable = ['delivery_order_id', 'provider_id', 'quantity', 'pic', 'tanggal'];  // Kolom yang bisa diisi
+    protected $fillable = ['delivery_order_id', 'provider_id', 'quantity', 'pic', 'tanggal', 'product_id'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
     protected $casts = [
@@ -28,6 +28,11 @@ class DeliveryOrderItem extends Model
     public function receiveItems()
     {
         return $this->hasMany(ReceiveItem::class, 'delivery_order_items_id');
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
     }
 }
 

@@ -8,7 +8,7 @@ class DeliveryOrder extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    protected $fillable = ['no_do', 'pic', 'tanggal'];  // Kolom yang bisa diisi
+    protected $fillable = ['no_do', 'pic', 'tanggal', 'status'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
     protected $casts = [

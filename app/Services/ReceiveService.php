@@ -58,6 +58,7 @@ class ReceiveService
                 'pic' => $data['pic'] ?? null,
                 'tanggal' => $data['tanggal'] ?? $now,
                 'delivery_order_id' => $data['delivery_order_id'],
+                'keterangan' => $data['keterangan'] ?? null,
             ]);
 
             // Buat receive items
@@ -95,7 +96,26 @@ class ReceiveService
     public static function listReceives(Response $response)
     {
         try {
-            $receives = Receive::with(['receiveItems.deliveryOrderItem.provider', 'deliveryOrder'])->get();
+            $receives = Receive::with([
+                'receiveItems.deliveryOrderItem.provider',
+                'receiveItems.deliveryOrderItem.product:id,name,category_id',
+                'receiveItems.deliveryOrderItem.product.category:id,name',
+                'deliveryOrder'
+            ])->get();
+
+            // Add product details to each receive item
+            foreach ($receives as $receive) {
+                foreach ($receive->receiveItems as $item) {
+                    if ($item->deliveryOrderItem && $item->deliveryOrderItem->product) {
+                        $product = $item->deliveryOrderItem->product;
+                        $item->product_id = $product->id;
+                        $item->product_name = $product->name;
+                        $item->category_id = $product->category_id;
+                        $item->category_name = $product->category ? $product->category->name : null;
+                    }
+                }
+            }
+
             return JsonResponder::success($response, $receives, 'Daftar receive berhasil diambil');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);
@@ -105,11 +125,73 @@ class ReceiveService
     public static function getReceive(Response $response, $id)
     {
         try {
-            $receive = Receive::with(['receiveItems.deliveryOrderItem.provider', 'deliveryOrder'])->find($id);
+            $receive = Receive::with([
+                'receiveItems.deliveryOrderItem.provider.orderItem.product:id,nama,category_id',
+                'receiveItems.deliveryOrderItem.provider.orderItem.product.category:id,nama',
+                'receiveItems.deliveryOrderItem.product:id,nama,category_id',
+                'receiveItems.deliveryOrderItem.product.category:id,nama',
+                'deliveryOrder'
+            ])->find($id);
 
             if (!$receive) {
                 return JsonResponder::error($response, 'Receive tidak ditemukan', 404);
             }
+
+            // Add product details to each receive item
+            foreach ($receive->receiveItems as $item) {
+                $product = null;
+                if ($item->deliveryOrderItem && $item->deliveryOrderItem->product) {
+                    $product = $item->deliveryOrderItem->product;
+                } elseif ($item->deliveryOrderItem && $item->deliveryOrderItem->provider && $item->deliveryOrderItem->provider->orderItem && $item->deliveryOrderItem->provider->orderItem->product) {
+                    $product = $item->deliveryOrderItem->provider->orderItem->product;
+                }
+
+                if ($product) {
+                    $item->product_id = $product->id;
+                    $item->product_name = $product->nama;
+                    $item->category_id = $product->category_id;
+                    $item->category_name = $product->category ? $product->category->nama : null;
+                } else {
+                    $item->product_id = null;
+                    $item->product_name = null;
+                    $item->category_id = null;
+                    $item->category_name = null;
+                }
+            }
+
+            return JsonResponder::success($response, $receive, 'Detail receive berhasil diambil');
+        } catch (\Exception $e) {
+            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
+    }
+
+    public static function getReceiveByDeliveryOrderId(Response $response, $deliveryOrderId)
+    {
+        try {
+            $receive = Receive::with([
+                'receiveItems.deliveryOrderItem.provider',
+                'receiveItems.deliveryOrderItem.product:id,name,category_id',
+                'receiveItems.deliveryOrderItem.product.category:id,name',
+                'deliveryOrder'
+            ])
+                ->where('delivery_order_id', $deliveryOrderId)
+                ->first();
+
+            if (!$receive) {
+                return JsonResponder::error($response, 'Receive untuk delivery order ini tidak ditemukan', 404);
+            }
+
+            // Add product details to each receive item
+            foreach ($receive->receiveItems as $item) {
+                if ($item->deliveryOrderItem && $item->deliveryOrderItem->product) {
+                    $product = $item->deliveryOrderItem->product;
+                    $item->product_id = $product->id;
+                    $item->product_name = $product->name;
+                    $item->category_id = $product->category_id;
+                    $item->category_name = $product->category ? $product->category->name : null;
+                }
+            }
+
             return JsonResponder::success($response, $receive, 'Detail receive berhasil diambil');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);
@@ -141,6 +223,9 @@ class ReceiveService
                     return JsonResponder::error($response, 'Delivery order tidak ditemukan', 404);
                 }
                 $updateData['delivery_order_id'] = $data['delivery_order_id'];
+            }
+            if (isset($data['keterangan'])) {
+                $updateData['keterangan'] = $data['keterangan'];
             }
 
             if (!empty($updateData)) {

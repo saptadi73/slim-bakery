@@ -10,4 +10,5 @@ return function (App $app) {
     (require __DIR__ . '/orders.php')($app);
     (require __DIR__ . '/delivery_orders.php')($app);
     (require __DIR__ . '/receives.php')($app);
+    (require __DIR__ . '/reports.php')($app);
 };
