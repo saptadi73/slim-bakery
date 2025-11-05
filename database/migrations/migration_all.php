@@ -1,8 +1,7 @@
 <?php
 
 require __DIR__ . '/../../vendor/autoload.php';
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-$dotenv->safeLoad();
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
 
 use Illuminate\Database\Capsule\Manager as Capsule;
 

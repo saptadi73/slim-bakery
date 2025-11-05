@@ -251,6 +251,21 @@ return function (App $app) {
             }
         })->add(new JwtMiddleware());
 
+        $ord->post('/providers/multi', function (Request $request, Response $response) use ($container) {
+            $svc = $container->get(OrderService::class);
+            $data = RequestHelper::getJsonBody($request);
+            try {
+                return $svc->createMultiProviders($response, $data);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'data'    => $data,
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        })->add(new JwtMiddleware());
+
         $ord->put('/providers/{id}', function (Request $request, Response $response, array $args) use ($container) {
             $id = (int)$args['id'];
             $svc = $container->get(OrderService::class);

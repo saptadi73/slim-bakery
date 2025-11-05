@@ -57,7 +57,7 @@ class DeliveryOrderService
 
             // Buat delivery order items
             foreach ($data['items'] as $item) {
-                if (!isset($item['provider_id']) || !isset($item['quantity']) || !isset($item['product_id']) || !isset($item['outlet_id'])) {
+                if (!isset($item['provider_id']) || $item['provider_id'] === null || !isset($item['quantity']) || !isset($item['product_id']) || !isset($item['outlet_id'])) {
                     return JsonResponder::error($response, 'Data item tidak lengkap', 400);
                 }
                 DeliveryOrderItem::create([

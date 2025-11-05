@@ -478,4 +478,57 @@ class OrderService
             return JsonResponder::error($response, $e->getMessage(), 500);
         }
     }
+
+    public static function createMultiProviders(Response $response, $data)
+    {
+        // Validasi data
+        if (!isset($data['providers']) || !is_array($data['providers']) || empty($data['providers'])) {
+            return JsonResponder::error($response, 'Data providers tidak lengkap', 400);
+        }
+
+        $createdProviders = [];
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($data['providers'] as $providerData) {
+                // Validasi setiap provider data
+                if (!isset($providerData['order_items_id']) || !isset($providerData['quantity'])) {
+                    return JsonResponder::error($response, 'Data provider tidak lengkap: order_items_id dan quantity diperlukan', 400);
+                }
+
+                $orderItemId = $providerData['order_items_id'];
+                $quantity = $providerData['quantity'];
+
+                // Cek apakah order_item ada
+                $orderItem = OrderItem::find($orderItemId);
+                if (!$orderItem) {
+                    return JsonResponder::error($response, "Order item dengan ID {$orderItemId} tidak ditemukan", 404);
+                }
+
+                // Cek apakah quantity provider tidak melebihi quantity order
+                if ($quantity > $orderItem->quantity) {
+                    return JsonResponder::error($response, "Quantity provider ({$quantity}) tidak boleh melebihi quantity order ({$orderItem->quantity}) untuk order item ID {$orderItemId}", 400);
+                }
+
+                // Buat provider
+                $provider = Provider::create([
+                    'order_items_id' => $orderItemId,
+                    'quantity' => $quantity,
+                    'tanggal' => $providerData['tanggal'] ?? Carbon::now(),
+                    'pic' => $providerData['pic'] ?? null,
+                ]);
+
+                $createdProviders[] = $provider;
+            }
+
+            DB::commit();
+
+            return JsonResponder::success($response, $createdProviders, 'Multi providers berhasil dibuat');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
+    }
 }
