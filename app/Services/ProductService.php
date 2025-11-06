@@ -180,7 +180,7 @@ class ProductService
     public static function getProductSummaryCategoryRoti(Response $response)
     {
         try {
-            $products = Product::with('category')->where('category_id', 2)->get();
+            $products = Product::with('category')->where('category_id','>=', 1)->get();
 
             $summary = $products->map(function ($product) {
                 // Get stock from inventory

@@ -103,5 +103,50 @@ return function (App $app) {
             $svc = $container->get(\App\Services\StockService::class);
             return $svc->getInventoryByProductId($response, $id);
         });
+
+        $cust->post('/moving/income', function (Request $request, Response $response) use ($container) {
+            $svc = $container->get(\App\Services\StockService::class);
+            $data = RequestHelper::getJsonBody($request);
+            try {
+                return $svc->createIncomeProductMove($response, $data);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'data'    => $data,
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        })->add(new JwtMiddleware());
+
+        $cust->post('moving/multi/income', function (Request $request, Response $response) use ($container) {
+            $svc = $container->get(\App\Services\StockService::class);
+            $data = RequestHelper::getJsonBody($request);
+            try {
+                return $svc->createMultiIncomeProductMove($response, $data);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'data'    => $data,
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        })->add(new JwtMiddleware());
+
+        $cust->post('/moving/multi', function (Request $request, Response $response) use ($container) {
+            $svc = $container->get(\App\Services\StockService::class);
+            $data = RequestHelper::getJsonBody($request);
+            try {
+                return $svc->multiCreateProductMoving($response, $data);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'data'    => $data,
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        })->add(new JwtMiddleware());
     });
 };

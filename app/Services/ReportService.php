@@ -72,12 +72,20 @@ class ReportService
                         'delivered' => false,
                         'received' => false,
                         'discrepancy' => false,
+                        'providers' => $item->providers->map(function ($provider) {
+                            return [
+                                'provider_id' => $provider->id,
+                                'provider_name' => $provider->nama ?? 'Unknown',
+                                'quantity_provided' => $provider->quantity,
+                            ];
+                        })->toArray(),
                     ];
 
                     $orderDetail['total_ordered_quantity'] += $item->quantity;
 
-                    // Check if provided
-                    if ($item->status === 'provided') {
+                    // Check if provided (has providers with sufficient quantity or status is provided)
+                    $totalProvidedQuantity = $item->providers->sum('quantity');
+                    if ($item->status === 'provided' || $totalProvidedQuantity >= $item->quantity) {
                         $itemDetail['provided'] = true;
                         $summary['items_provided']++;
                     }
