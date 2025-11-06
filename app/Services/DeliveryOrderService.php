@@ -204,8 +204,12 @@ class DeliveryOrderService
                 $updatedItemIds = [];
 
                 foreach ($data['items'] as $item) {
-                    if (!isset($item['provider_id']) || !isset($item['quantity'])) {
+                    if (!isset($item['provider_id'])) {
                         return JsonResponder::error($response, 'Data item tidak lengkap', 400);
+                    }
+
+                    if (!isset($item['quantity'])) {
+                        $item['quantity'] = 0;
                     }
 
                     if (isset($item['id']) && in_array($item['id'], $existingItemIds)) {

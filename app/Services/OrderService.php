@@ -361,8 +361,12 @@ class OrderService
     public static function createSingleProvider(Response $response, $data)
     {
         // Validasi data
-        if (!isset($data['order_items_id']) || !isset($data['quantity'])) {
+        if (!isset($data['order_items_id'])) {
             return JsonResponder::error($response, 'Data provider tidak lengkap: order_items_id dan quantity diperlukan', 400);
+        }
+
+        if (!isset($data['quantity'])) {
+            $data['quantity'] = 0;
         }
 
         $orderItemId = $data['order_items_id'];
@@ -377,10 +381,7 @@ class OrderService
                 return JsonResponder::error($response, "Order item dengan ID {$orderItemId} tidak ditemukan", 404);
             }
 
-            // Cek apakah quantity provider tidak melebihi quantity order
-            if ($quantity > $orderItem->quantity) {
-                return JsonResponder::error($response, "Quantity provider ({$quantity}) tidak boleh melebihi quantity order ({$orderItem->quantity}) untuk order item ID {$orderItemId}", 400);
-            }
+            
 
             // Buat provider
             $provider = Provider::create([
@@ -504,11 +505,6 @@ class OrderService
                 $orderItem = OrderItem::find($orderItemId);
                 if (!$orderItem) {
                     return JsonResponder::error($response, "Order item dengan ID {$orderItemId} tidak ditemukan", 404);
-                }
-
-                // Cek apakah quantity provider tidak melebihi quantity order
-                if ($quantity > $orderItem->quantity) {
-                    return JsonResponder::error($response, "Quantity provider ({$quantity}) tidak boleh melebihi quantity order ({$orderItem->quantity}) untuk order item ID {$orderItemId}", 400);
                 }
 
                 // Buat provider
