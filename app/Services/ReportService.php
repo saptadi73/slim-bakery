@@ -15,6 +15,8 @@ class ReportService
         try {
             // Fetch all orders with related data
             $orders = Order::with([
+                'outlet',
+                'user',
                 'orderItems.product.category',
                 'orderItems.providers.deliveryOrderItems.deliveryOrder',
                 'orderItems.providers.deliveryOrderItems.receiveItems.receive'
@@ -38,10 +40,10 @@ class ReportService
                 $orderDetail = [
                     'order_id' => $order->id,
                     'no_order' => $order->no_order,
-                    'outlet_name' => $order->outlet_name,
-                    'pic_name' => $order->pic_name,
+                    'outlet_name' => $order->outlet->nama ?? null,
+                    'pic_name' => $order->user->name ?? null,
                     'tanggal' => $order->tanggal,
-                    'status_order' => $order->status_order,
+                    'status' => $order->status,
                     'keterangan' => $order->keterangan,
                     'total_ordered_quantity' => 0,
                     'total_delivered_quantity' => 0,
@@ -50,8 +52,8 @@ class ReportService
                     'has_discrepancies' => false,
                 ];
 
-                $orderDelivered = $order->status_order === 'delivered' || $order->status_order === 'closed';
-                $orderClosed = $order->status_order === 'closed';
+                $orderDelivered = $order->status === 'delivered' || $order->status === 'closed';
+                $orderClosed = $order->status === 'closed';
 
                 if ($orderDelivered) {
                     $summary['orders_delivered']++;
