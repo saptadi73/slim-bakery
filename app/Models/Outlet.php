@@ -24,7 +24,17 @@ class Outlet extends Model
     {
         return $this->belongsToMany(User::class, 'user_outlet', 'outlet_id', 'user_id')->withTimestamps();
     }
-    
+
+    public function inventories()
+    {
+        return $this->hasMany(Inventory::class, 'outlet_id');
+    }
+
+    public function productMovings()
+    {
+        return $this->hasMany(ProductMoving::class, 'outlet_id');
+    }
+
 }
 
 ?>

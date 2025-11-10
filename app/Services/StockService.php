@@ -180,17 +180,13 @@ class StockService
     public static function createProductMoving(Response $response, $data)
     {
         // Validasi data
-        if (!isset($data['product_id']) || !isset($data['type']) || !isset($data['quantity'])) {
-            return JsonResponder::error($response, 'Data tidak lengkap: product_id, type, quantity diperlukan', 400);
+        if (!isset($data['product_id']) || !isset($data['type']) || !isset($data['quantity']) || !isset($data['outlet_id'])) {
+            return JsonResponder::error($response, 'Data tidak lengkap: product_id, type, quantity, outlet_id diperlukan', 400);
         }
 
-        // Handle outlet_id: allow null if empty or invalid
-        if (!isset($data['outlet_id']) || empty($data['outlet_id'])) {
-            $data['outlet_id'] = null;
-        } elseif (!is_numeric($data['outlet_id']) || $data['outlet_id'] <= 0) {
-            return JsonResponder::error($response, 'outlet_id harus angka positif atau null', 400);
-        } else {
-            $data['outlet_id'] = (int)$data['outlet_id'];
+        $outletId = $data['outlet_id'];
+        if (!is_numeric($outletId) || $outletId <= 0) {
+            return JsonResponder::error($response, 'outlet_id harus angka positif', 400);
         }
 
         $type = $data['type'];
@@ -213,35 +209,32 @@ class StockService
             $productMoving = ProductMoving::create([
                 'product_id' => $data['product_id'],
                 'type' => $type,
-                'outlet_id' => (int)$data['outlet_id'],
+                'outlet_id' => $outletId,
                 'quantity' => $movingQuantity,
                 'tanggal' => $data['tanggal'] ?? $now,
                 'pic' => $data['pic'] ?? null,
                 'keterangan' => $data['keterangan'] ?? null,
             ]);
 
-            // Calculate sum of quantities from all ProductMoving for this product_id
-            $totalQuantity = ProductMoving::where('product_id', $data['product_id'])->sum('quantity');
+            // Calculate sum of quantities from all ProductMoving for this product_id and outlet_id
+            $totalQuantity = ProductMoving::where('product_id', $data['product_id'])->where('outlet_id', $outletId)->sum('quantity');
 
             // Update or create Inventory
-            $inventory = Inventory::where('product_id', $data['product_id'])->first();
+            $inventory = Inventory::where('product_id', $data['product_id'])->where('outlet_id', $outletId)->first();
             if ($inventory) {
                 $inventory->quantity = $totalQuantity;
-                $inventory->tanggal = $now;
-                $inventory->pic = $data['pic'] ?? $inventory->pic;
                 $inventory->save();
             } else {
                 Inventory::create([
                     'product_id' => $data['product_id'],
+                    'outlet_id' => $outletId,
                     'quantity' => $totalQuantity,
-                    'tanggal' => $now,
-                    'pic' => $data['pic'] ?? null,
                 ]);
             }
 
             return JsonResponder::success($response, [
                 'product_moving' => $productMoving,
-                'inventory' => $inventory ?? Inventory::where('product_id', $data['product_id'])->first(),
+                'inventory' => $inventory ?? Inventory::where('product_id', $data['product_id'])->where('outlet_id', $outletId)->first(),
             ], 'Product moving berhasil dibuat dan inventory diperbarui');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);
@@ -310,23 +303,19 @@ class StockService
                     ]);
                     $productMovings[] = $productMoving;
 
-                    // Update Inventory
-                    $inventory = Inventory::where('product_id', $productId)
-                        ->orderBy('id', 'desc')
-                        ->first();
-                    $id_inventory = $inventory ? $inventory->id : null;
+                    // Update Inventory per product per outlet
+                    $inventory = Inventory::where('product_id', $productId)->where('outlet_id', $outletId)->first();
                     $current_stock = $inventory ? $inventory->quantity : 0;
                     $new_stock = $current_stock + $quantity;
 
                     if ($inventory) {
                         $inventory->quantity = $new_stock;
-                        $inventory->tanggal = $now;
                         $inventory->save();
                     } else {
                         $inventory = Inventory::create([
                             'product_id' => $productId,
+                            'outlet_id' => $outletId,
                             'quantity' => $quantity,
-                            'tanggal' => $now,
                         ]);
                     }
                     $inventories[] = $inventory;
@@ -388,10 +377,8 @@ class StockService
                     ]);
                     $productMovings[] = $productMoving;
 
-                    // Update Inventory
-                    $inventory = Inventory::where('product_id', $productId)
-                        ->orderBy('id', 'desc')
-                        ->first();
+                    // Update Inventory per product per outlet
+                    $inventory = Inventory::where('product_id', $productId)->where('outlet_id', $outletId)->first();
                     $current_stock = $inventory ? $inventory->quantity : 0;
                     $new_stock = $current_stock + $movingQuantity;
 
@@ -409,6 +396,7 @@ class StockService
                         }
                         $inventory = Inventory::create([
                             'product_id' => $productId,
+                            'outlet_id' => $outletId,
                             'quantity' => $new_stock,
                             'tanggal' => $now,
                         ]);

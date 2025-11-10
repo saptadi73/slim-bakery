@@ -87,11 +87,27 @@ class DeliveryOrderService
             if (isset($data['order_id'])) {
                 $order = Order::find($data['order_id']);
                 if ($order) {
-                    $order->update(['status_order' => 'delivered']);
+                    $order->update(['status' => 'delivered']);
                 }
             }
 
             DB::commit();
+
+            // Update related orders status to 'delivered'
+            $deliveryOrder->load('deliveryOrderItems.provider.orderItem.order');
+            $orderIds = [];
+            foreach ($deliveryOrder->deliveryOrderItems as $item) {
+                if ($item->provider && $item->provider->orderItem && $item->provider->orderItem->order) {
+                    $orderIds[] = $item->provider->orderItem->order->id;
+                }
+            }
+            $orderIds = array_unique($orderIds);
+            foreach ($orderIds as $orderId) {
+                $order = Order::find($orderId);
+                if ($order) {
+                    $order->update(['status' => 'delivered']);
+                }
+            }
         } catch (\Exception $e) {
             DB::rollback();
             return JsonResponder::error($response, $e->getMessage(), 500);
@@ -294,7 +310,7 @@ class DeliveryOrderService
             foreach ($orderIds as $orderId) {
                 $order = Order::find($orderId);
                 if ($order) {
-                    $order->update(['status_order' => 'completed']);
+                    $order->update(['status' => 'completed']);
                 }
             }
 

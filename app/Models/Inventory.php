@@ -8,11 +8,17 @@ class Inventory extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    protected $fillable = ['product_id', 'quantity','tanggal','pic'];  // Kolom yang bisa diisi
+    // Sesuaikan dengan migration_all.php: inventories memiliki product_id, outlet_id, quantity
+    protected $fillable = ['product_id', 'outlet_id', 'quantity'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
-    public function products()
+    public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class, 'outlet_id');
     }
 }

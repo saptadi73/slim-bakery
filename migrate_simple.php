@@ -1,7 +1,7 @@
 <?php
 
-require __DIR__ . '/../../vendor/autoload.php';
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../../');
+require __DIR__ . '/vendor/autoload.php';
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/');
 $dotenv->safeLoad();
 
 try {
@@ -13,36 +13,7 @@ try {
 
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    echo "Koneksi berhasil ke database.\n\n";
-
-    // Drop all existing tables first
-    echo "Menghapus semua tabel yang ada...\n";
-    $tables = [
-        'receive_items',
-        'receives',
-        'delivery_order_items',
-        'delivery_orders',
-        'user_outlet',
-        'delivers',
-        'providers',
-        'order_items',
-        'orders',
-        'product_movings',
-        'inventories',
-        'products',
-        'categories',
-        'outlets',
-        'auth_tokens',
-        'role_user',
-        'users',
-        'roles'
-    ];
-
-    foreach ($tables as $table) {
-        $pdo->exec("DROP TABLE IF EXISTS $table CASCADE");
-        echo "✓ Tabel $table dihapus.\n";
-    }
-    echo "Semua tabel lama berhasil dihapus.\n\n";
+    echo "Koneksi berhasil ke database remote.\n\n";
 
     // Buat tabel users
     $pdo->exec("
@@ -61,8 +32,6 @@ try {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS roles (
             id BIGSERIAL PRIMARY KEY,
-
-    
             name VARCHAR(255) UNIQUE NOT NULL,
             label VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -95,26 +64,6 @@ try {
     ");
     echo "✓ Tabel role_user dibuat.\n";
 
-    // Buat tabel auth_tokens
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS auth_tokens (
-            id BIGSERIAL PRIMARY KEY,
-            user_id BIGINT NOT NULL,
-            type VARCHAR(50) NOT NULL,
-            token_hash VARCHAR(128) NOT NULL,
-            expires_at TIMESTAMP NOT NULL,
-            revoked_at TIMESTAMP,
-            meta JSONB,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ");
-    echo "✓ Tabel auth_tokens dibuat.\n";
-
-    // Create index on auth_tokens
-    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_auth_tokens_user_type ON auth_tokens(user_id, type)");
-    echo "✓ Index auth_tokens dibuat.\n";
-
     // Buat tabel outlets
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS outlets (
@@ -146,14 +95,11 @@ try {
     // Insert categories
     $pdo->exec("
         INSERT INTO categories (nama, keterangan) VALUES
-        ('CAKE', 'Kue-kue'),
-        ('BOLU', 'Bolu'),
-        ('KEMASAN', 'Kue Kemasan'),
-        ('ROTI BF & SB - ASIN', 'Roti Bantal Asin'),
-        ('ROTI BF & SB - MANIS', 'Roti Bantal Manis'),
-        ('ROTI CP - ASIN','Roti Asin'),
-        ('ROTI CP - MANIS','Roti Manis'),
-        ('ROTI SOBEK','Roti Sobek')
+        ('Cake', 'Kue-kue'),
+        ('Bread', 'Roti'),
+        ('Pastry', 'Kue kering'),
+        ('Cookies', 'Kue kering'),
+        ('Beverages', 'Minuman')
         ON CONFLICT DO NOTHING
     ");
     echo "✓ Data awal categories ditambahkan.\n";
@@ -187,8 +133,7 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-            FOREIGN KEY (outlet_id) REFERENCES outlets(id) ON DELETE CASCADE,
-            UNIQUE (product_id, outlet_id)
+            FOREIGN KEY (outlet_id) REFERENCES outlets(id) ON DELETE CASCADE
         )
     ");
     echo "✓ Tabel inventories dibuat.\n";
@@ -230,17 +175,12 @@ try {
     ");
     echo "✓ Tabel orders dibuat.\n";
 
-    // Jika menggunakan PostgreSQL, buat sequence untuk nomor order agar aman terhadap race condition
+    // Jika menggunakan PostgreSQL, buat dan inisialisasi sequence order_no_seq agar berlanjut dari data existing
     try {
-        // create sequence if not exists (Postgres supports IF NOT EXISTS)
         $pdo->exec("CREATE SEQUENCE IF NOT EXISTS order_no_seq START WITH 1 INCREMENT BY 1;");
-        echo "✓ Sequence order_no_seq dibuat (jika menggunakan Postgres).\n";
-        // Initialize sequence to continue from existing max orders (if any)
-        // Extract numeric suffix from no_order (e.g. ORDER-00012 -> 12) and set sequence to that max
-        // so nextval will return max+1. If no orders exist, set to 0 so nextval returns 1.
-        $pdo->exec(
-            "SELECT setval('order_no_seq', COALESCE((SELECT MAX((regexp_replace(no_order, '\\D', '', 'g'))::bigint) FROM orders), 0));"
-        );
+        // Set sequence value to max numeric suffix extracted from orders.no_order (ORDER-00012 -> 12). If no rows, set to 0.
+        $pdo->exec("SELECT setval('order_no_seq', COALESCE((SELECT MAX((regexp_replace(no_order, '\\D', '', 'g'))::bigint) FROM orders), 0));");
+        echo "✓ Sequence order_no_seq dibuat dan diinisialisasi (jika menggunakan Postgres).\n";
     } catch (PDOException $e) {
         // ignore if DB doesn't support sequences (e.g., MySQL)
     }
@@ -253,8 +193,8 @@ try {
             product_id BIGINT NOT NULL,
             outlet_id BIGINT NOT NULL,
             quantity INTEGER DEFAULT 0,
-            tanggal DATE,
-            pic VARCHAR(255),
+            harga DECIMAL(10,2) DEFAULT 0,
+            subtotal DECIMAL(10,2) DEFAULT 0,
             status VARCHAR(50) DEFAULT 'open',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -292,6 +232,7 @@ try {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS delivers (
             id BIGSERIAL PRIMARY KEY,
+            order_id BIGINT NOT NULL,
             provider_id BIGINT NOT NULL,
             quantity INTEGER DEFAULT 0,
             tanggal DATE,
@@ -299,6 +240,7 @@ try {
             receiver VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
             FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE
         )
     ");
@@ -341,12 +283,10 @@ try {
             quantity INTEGER DEFAULT 0,
             pic VARCHAR(255) NOT NULL,
             tanggal DATE NOT NULL,
-            product_id BIGINT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (delivery_order_id) REFERENCES delivery_orders(id) ON DELETE CASCADE,
-            FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE,
-            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+            FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE
         )
     ");
     echo "✓ Tabel delivery_order_items dibuat.\n";
@@ -383,6 +323,26 @@ try {
         )
     ");
     echo "✓ Tabel receive_items dibuat.\n";
+
+    // Buat tabel auth_tokens
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS auth_tokens (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL,
+            type VARCHAR(50) NOT NULL,
+            token_hash VARCHAR(128) NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            revoked_at TIMESTAMP,
+            meta JSONB,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+    echo "✓ Tabel auth_tokens dibuat.\n";
+
+    // Create index on auth_tokens
+    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_auth_tokens_user_type ON auth_tokens(user_id, type)");
+    echo "✓ Index auth_tokens dibuat.\n";
 
     echo "\n=== SEMUA MIGRASI BERHASIL ===\n";
 

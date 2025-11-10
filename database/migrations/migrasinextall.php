@@ -129,6 +129,16 @@ if (!$schema->hasTable('orders')) {
         $t->timestamps();
     });
     echo "Tabel orders dibuat.\n";
+
+    // Jika menggunakan PostgreSQL, buat dan inisialisasi sequence order_no_seq agar berlanjut dari data existing
+    try {
+        Capsule::connection()->getPdo()->exec("CREATE SEQUENCE IF NOT EXISTS order_no_seq START WITH 1 INCREMENT BY 1;");
+        // Set sequence value to max numeric suffix extracted from orders.no_order (ORDER-00012 -> 12). If no rows, set to 0.
+        Capsule::connection()->getPdo()->exec("SELECT setval('order_no_seq', COALESCE((SELECT MAX((regexp_replace(no_order, '\\D', '', 'g'))::bigint) FROM orders), 0));");
+        echo "✓ Sequence order_no_seq dibuat dan diinisialisasi (jika menggunakan Postgres).\n";
+    } catch (PDOException $e) {
+        // ignore if DB doesn't support sequences (e.g., MySQL)
+    }
 }
 
 /** order_items table */
@@ -158,7 +168,7 @@ if (!$schema->hasTable('providers')) {
         $t->integer('quantity')->default(0);
         $t->date('tanggal')->nullable();
         $t->string('pic')->nullable();
-        $t->string('nopro')->uqique();
+    $t->string('nopro')->unique();
         $t->timestamps();
 
         $t->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');

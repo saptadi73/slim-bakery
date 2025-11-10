@@ -13,27 +13,7 @@ use Illuminate\Database\Capsule\Manager as DB;
 
 class OrderService
 {
-    private function nextCustomerCode(): string
-    {
-        $prefix = 'ORDER-';
-
-        // Get all order numbers with the prefix
-        $orders = Order::where('no_order', 'like', $prefix . '%')
-            ->pluck('no_order')
-            ->toArray();
-
-        $maxNumber = 0;
-        foreach ($orders as $order) {
-            $num = (int)substr($order, strlen($prefix));
-            if ($num > $maxNumber) {
-                $maxNumber = $num;
-            }
-        }
-
-        $next = $maxNumber + 1;
-
-        return $prefix . str_pad((string)$next, 5, '0', STR_PAD_LEFT);
-    }
+    // Use Order::generateNoOrder() from the model to produce sequential no_order
 
     public static function createOrder(Response $response, $data)
     {
@@ -43,34 +23,71 @@ class OrderService
             return JsonResponder::error($response, 'Data items tidak lengkap', 400);
         }
 
-        // Buat order baru
-        try {
-            $order = Order::create([
-                'no_order' => (new self())->nextCustomerCode(),
-                'outlet_name' => $data['outlet_name'] ?? null,
-                'pic_name' => $data['pic_name'] ?? null,
-                'tanggal' => $data['tanggal'] ?? null,
-                'status_order' => 'new',
-                'keterangan' => $data['keterangan'] ?? null,
-            ]);
+        // Validasi outlet_id yang required
+        if (!isset($data['outlet_id']) || empty($data['outlet_id'])) {
+            return JsonResponder::error($response, 'outlet_id tidak boleh kosong', 400);
+        }
 
-            // Buat order items
-            foreach ($data['items'] as $item) {
-                if (!isset($item['product_id']) || !isset($item['outlet_id']) || !isset($item['quantity'])) {
-                    return JsonResponder::error($response, 'Data item tidak lengkap', 400);
+        // Buat order baru dengan mekanisme yang mengurangi race condition
+        $maxAttempts = 5;
+        $attempt = 0;
+        $order = null;
+        while ($attempt < $maxAttempts) {
+            try {
+                DB::beginTransaction();
+                // Acquire PostgreSQL advisory transaction lock (released at commit/rollback)
+                try {
+                    DB::getConnection()->getPdo()->exec("SELECT pg_advisory_xact_lock(123456789)");
+                } catch (\Throwable $t) {
+                    // If not Postgres or lock fails, ignore and proceed (fallback)
                 }
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item['product_id'],
-                    'outlet_id' => $item['outlet_id'],
-                    'quantity' => $item['quantity'],
-                    'pic' => $item['pic'] ?? null,
-                    'tanggal' => $item['tanggal'] ?? $now,
-                    'status' => $item['status'] ?? 'open',
+
+                $order = Order::create([
+                    'no_order' => Order::generateNoOrder(),
+                    'outlet_id' => $data['outlet_id'],
+                    'user_id' => $data['user_id'] ?? null,
+                    'total' => $data['total'] ?? 0,
+                    'status' => 'open',
+                    'tanggal' => $data['tanggal'] ?? null,
                 ]);
+
+                // Buat order items
+                foreach ($data['items'] as $item) {
+                    if (!isset($item['product_id']) || !isset($item['outlet_id']) || !isset($item['quantity'])) {
+                        DB::rollBack();
+                        return JsonResponder::error($response, 'Data item tidak lengkap', 400);
+                    }
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $item['product_id'],
+                        'outlet_id' => $item['outlet_id'],
+                        'quantity' => $item['quantity'],
+                        'pic' => $item['pic'] ?? null,
+                        'tanggal' => $item['tanggal'] ?? $now,
+                        'status' => $item['status'] ?? 'open',
+                    ]);
+                }
+
+                DB::commit();
+                break; // success
+            } catch (\Illuminate\Database\QueryException $qe) {
+                DB::rollBack();
+                $sqlState = $qe->getCode();
+                // PostgreSQL unique violation is 23505, MySQL is 23000. Retry on unique violation.
+                if (strpos($sqlState, '23505') !== false || strpos($sqlState, '23000') !== false) {
+                    $attempt++;
+                    usleep(100000 * $attempt); // backoff
+                    continue; // retry
+                }
+                return JsonResponder::error($response, $qe->getMessage(), 500);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return JsonResponder::error($response, $e->getMessage(), 500);
             }
-        } catch (\Exception $e) {
-            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
+
+        if (!$order) {
+            return JsonResponder::error($response, 'Gagal membuat order setelah beberapa percobaan, silakan coba lagi', 500);
         }
 
         return JsonResponder::success($response, $order->load('orderItems'), 'Order berhasil dibuat');
@@ -89,7 +106,19 @@ class OrderService
     public static function listAllOrders(Response $response)
     {
         try {
-            $orders = Order::with(['orderItems.product', 'orderItems.outlet'])->get();
+            $orders = Order::with(['orderItems.product', 'orderItems.outlet', 'outlet', 'user'])->get();
+
+            // Ensure outlet_name and pic_name are present on returned object. Prefer orders table values if present, otherwise use related outlet.
+            foreach ($orders as $order) {
+                if (empty($order->outlet_name)) {
+                    $order->outlet_name = $order->outlet->nama ?? null;
+                }
+                if (empty($order->pic_name)) {
+                    // Prefer user.name as pic_name, fall back to outlet.gambar
+                    $order->pic_name = $order->pic_name ?? ($order->user->name ?? ($order->outlet->gambar ?? null));
+                }
+            }
+
             return JsonResponder::success($response, $orders, 'Daftar semua order berhasil diambil');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);
@@ -101,7 +130,16 @@ class OrderService
         try {
             $orders = Order::whereHas('orderItems', function ($query) use ($outlet_id) {
                 $query->where('outlet_id', $outlet_id);
-            })->with(['orderItems.product', 'orderItems.outlet'])->get();
+            })->with(['orderItems.product', 'orderItems.outlet', 'outlet', 'user'])->get();
+
+            foreach ($orders as $order) {
+                if (empty($order->outlet_name)) {
+                    $order->outlet_name = $order->outlet->nama ?? null;
+                }
+                if (empty($order->pic_name)) {
+                    $order->pic_name = $order->pic_name ?? ($order->user->name ?? ($order->outlet->gambar ?? null));
+                }
+            }
 
             return JsonResponder::success($response, $orders, 'Daftar order berdasarkan outlet berhasil diambil');
         } catch (\Exception $e) {

@@ -8,7 +8,7 @@ class Deliver extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    protected $fillable = ['provider_id','nodo', 'quantity','status','tanggal','pic','receiver'];  // Kolom yang bisa diisi
+    protected $fillable = ['provider_id', 'quantity','tanggal','pic','receiver'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
     public function provider()
