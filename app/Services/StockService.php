@@ -276,7 +276,7 @@ class StockService
         $inventories = [];
 
         try {
-            DB::transaction(function () use ($products, $now, &$productMovings, &$inventories) {
+            DB::transaction(function () use ($products, $now, &$productMovings, &$inventories, $response) {
                 foreach ($products as $productData) {
                     // Validasi per produk
                     if (!isset($productData['product_id']) || !isset($productData['outlet_id']) || !isset($productData['quantity'])) {
