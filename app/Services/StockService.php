@@ -34,12 +34,10 @@ class StockService
             $productMoving->save();
 
             $inventory = Inventory::where('product_id', $data['product_id'])
-                ->orderBy('id', 'desc')
+                ->where('outlet_id', $data['outlet_id'])
                 ->first();
-            $id_invetory = $inventory ? $inventory->id : null;
             $current_stock = $inventory ? $inventory->quantity : 0;
             $new_stock = $current_stock + $data['quantity'];
-            $inventory = Inventory::find($id_invetory);
             if ($inventory) {
                 // Update stok di inventory
                 $inventory->quantity = $new_stock;
@@ -49,6 +47,7 @@ class StockService
                 // Jika inventory belum ada, buat baru
                 Inventory::create([
                     'product_id' => $data['product_id'],
+                    'outlet_id' => $data['outlet_id'],
                     'quantity' => $data['quantity'],
                     'tanggal' => $now,
                 ]);
@@ -91,7 +90,7 @@ class StockService
             $productMoving->save();
 
             $inventory = Inventory::where('product_id', $productId)
-                ->orderBy('id', 'desc')
+                ->where('outlet_id', $outletId)
                 ->first();
             $id_invetory = $inventory ? $inventory->id : null;
             $current_stock = $inventory ? $inventory->quantity : 0;
@@ -117,6 +116,7 @@ class StockService
                 if ($type === 'income') {
                     Inventory::create([
                         'product_id' => $productId,
+                        'outlet_id' => $outletId,
                         'quantity' => $quantity,
                         'tanggal' => $now,
                     ]);
@@ -152,18 +152,16 @@ class StockService
             $productMoving->save();
 
             $inventory = Inventory::where('product_id', $data['product_id'])
-                ->orderBy('id', 'desc')
+                ->where('outlet_id', $data['outlet_id'])
                 ->first();
-            $id_invetory = $inventory ? $inventory->id : null;
-            $current_stock = $inventory ? $inventory->stock : 0;
+            $current_stock = $inventory ? $inventory->quantity : 0;
             $new_stock = $current_stock - $data['quantity'];
             if ($new_stock < 0) {
                 return JsonResponder::error($response, 'Stok tidak mencukupi untuk pengeluaran ini', 400);
             }
-            $inventory = Inventory::find($id_invetory);
             if ($inventory) {
                 // Update stok di inventory
-                $inventory->stock = $new_stock;
+                $inventory->quantity = $new_stock;
                 $inventory->tanggal = $now;
                 $inventory->save();
             } else {
@@ -326,89 +324,6 @@ class StockService
                 'product_movings' => $productMovings,
                 'inventories' => $inventories,
             ], 'Multi income product move berhasil dibuat');
-        } catch (\Exception $e) {
-            return JsonResponder::error($response, $e->getMessage(), 500);
-        }
-    }
-
-    public static function multiCreateProductMoving(Response $response, $data)
-    {
-        // Validasi data utama
-        if (!isset($data['products']) || !is_array($data['products']) || empty($data['products'])) {
-            return JsonResponder::error($response, 'Data tidak lengkap: products (array) diperlukan', 400);
-        }
-
-        $products = $data['products'];
-        $now = Carbon::now();
-
-        $productMovings = [];
-        $inventories = [];
-
-        try {
-            DB::transaction(function () use ($products, $now, &$productMovings, &$inventories) {
-                foreach ($products as $productData) {
-                    // Validasi per produk
-                    if (!isset($productData['product_id']) || !isset($productData['outlet_id']) || !isset($productData['quantity']) || !isset($productData['type'])) {
-                        throw new \Exception('Setiap produk harus memiliki product_id, outlet_id, quantity, dan type');
-                    }
-                    $productId = $productData['product_id'];
-                    $outletId = $productData['outlet_id'];
-                    $quantity = $productData['quantity'];
-                    $type = $productData['type'];
-                    if (!is_numeric($quantity) || $quantity <= 0) {
-                        throw new \Exception('Quantity harus angka positif');
-                    }
-                    if ($type !== 'income' && $type !== 'outcome') {
-                        throw new \Exception('Type harus "income" atau "outcome"');
-                    }
-
-                    // Set quantity for ProductMoving: positive for income, negative for outcome
-                    $movingQuantity = $type === 'income' ? $quantity : -$quantity;
-
-                    // Buat ProductMoving
-                    $productMoving = ProductMoving::create([
-                        'product_id' => $productId,
-                        'outlet_id' => $outletId,
-                        'quantity' => $movingQuantity,
-                        'type' => $type,
-                        'tanggal' => $productData['tanggal'] ?? $now,
-                        'pic' => $productData['pic'] ?? null,
-                        'keterangan' => $productData['keterangan'] ?? null,
-                    ]);
-                    $productMovings[] = $productMoving;
-
-                    // Update Inventory per product per outlet
-                    $inventory = Inventory::where('product_id', $productId)->where('outlet_id', $outletId)->first();
-                    $current_stock = $inventory ? $inventory->quantity : 0;
-                    $new_stock = $current_stock + $movingQuantity;
-
-                    if ($type === 'outcome' && $new_stock < 0) {
-                        throw new \Exception('Stok tidak mencukupi untuk pengeluaran produk ' . $productId);
-                    }
-
-                    if ($inventory) {
-                        $inventory->quantity = $new_stock;
-                        $inventory->tanggal = $now;
-                        $inventory->save();
-                    } else {
-                        if ($type === 'outcome') {
-                            throw new \Exception('Inventory tidak ditemukan untuk produk ' . $productId . ' pada outcome');
-                        }
-                        $inventory = Inventory::create([
-                            'product_id' => $productId,
-                            'outlet_id' => $outletId,
-                            'quantity' => $new_stock,
-                            'tanggal' => $now,
-                        ]);
-                    }
-                    $inventories[] = $inventory;
-                }
-            });
-
-            return JsonResponder::success($response, [
-                'product_movings' => $productMovings,
-                'inventories' => $inventories,
-            ], 'Multi product moving berhasil dibuat');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);
         }
