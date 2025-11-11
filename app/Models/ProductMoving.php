@@ -8,7 +8,7 @@ class ProductMoving extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    protected $fillable = ['product_id', 'type','outlet_id', 'quantity','tanggal','pic','keterangan'];  // Kolom yang bisa diisi
+    protected $fillable = ['product_id', 'type', 'outlet_id', 'quantity', 'tanggal', 'pic', 'keterangan'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
     public function product()

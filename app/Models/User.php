@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class User extends Model
 {
     protected $table = 'users';  // Nama tabel
-    protected $fillable = ['name', 'email', 'password', 'pic_name'];  // Kolom yang bisa diisi
+    protected $fillable = ['name', 'email', 'password'];  // Kolom yang bisa diisi
     protected $hidden = ['password'];  // Menyembunyikan password dalam respons API
     public $timestamps = true;
 

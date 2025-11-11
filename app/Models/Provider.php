@@ -7,7 +7,6 @@ class Provider extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    // tambahkan 'nopro' agar mass-assignment konsisten dengan migration
     protected $fillable = ['order_items_id', 'quantity', 'tanggal', 'pic', 'nopro'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
