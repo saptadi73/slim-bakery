@@ -72,7 +72,16 @@ class DeliveryOrderService
 
             // Automatically create ProductMoving with type 'outcome'
             foreach ($data['items'] as $item) {
-                ProductMoving::create([
+                // ProductMoving::create([
+                //     'product_id' => $item['product_id'],
+                //     'type' => 'outcome',
+                //     'outlet_id' => $item['outlet_id'],
+                //     'quantity' => -$item['quantity'],
+                //     'tanggal' => $item['tanggal'] ?? $now,
+                //     'pic' => $item['pic'] ?? null,
+                //     'keterangan' => $deliveryOrder->no_do,
+                // ]);
+                StockService::createProductMoving($response, [
                     'product_id' => $item['product_id'],
                     'type' => 'outcome',
                     'outlet_id' => $item['outlet_id'],

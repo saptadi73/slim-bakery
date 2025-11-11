@@ -78,10 +78,11 @@ class StockService
             return JsonResponder::error($response, 'Tipe harus "income" atau "outcome"', 400);
         }
         try {
+            $movingQuantity = $type === 'income' ? $quantity : -$quantity;
             $productMoving = ProductMoving::create([
                 'product_id' => $productId,
                 'outlet_id' => $outletId,
-                'quantity' => $quantity,
+                'quantity' => $movingQuantity,
                 'type' => $type,
                 'tanggal' => $tanggal,
                 'pic' => $pic,
@@ -143,7 +144,7 @@ class StockService
             $productMoving = ProductMoving::create([
                 'product_id' => $data['product_id'],
                 'outlet_id' => $data['outlet_id'],
-                'quantity' => $data['quantity'],
+                'quantity' => -$data['quantity'],
                 'type' => 'outcome', // 'income' or 'outcome'
                 'tanggal' => $data['tanggal'] ?? $now,
                 'pic' => $data['pic'] ?? null,
@@ -285,16 +286,21 @@ class StockService
                     $productId = $productData['product_id'];
                     $outletId = $productData['outlet_id'];
                     $quantity = $productData['quantity'];
+                    $type = $productData['type'] ?? 'income';
+                    if ($type !== 'income' && $type !== 'outcome') {
+                        throw new \Exception('Type harus "income" atau "outcome"');
+                    }
                     if (!is_numeric($quantity) || $quantity <= 0) {
                         throw new \Exception('Quantity harus angka positif');
                     }
+                    $movingQuantity = $type === 'income' ? $quantity : -$quantity;
 
                     // Buat ProductMoving
                     $productMoving = ProductMoving::create([
                         'product_id' => $productId,
                         'outlet_id' => $outletId,
-                        'quantity' => $quantity,
-                        'type' => 'income',
+                        'quantity' => $movingQuantity,
+                        'type' => $type,
                         'tanggal' => $productData['tanggal'] ?? $now,
                         'pic' => $productData['pic'] ?? null,
                         'keterangan' => $productData['keterangan'] ?? null,
@@ -304,7 +310,7 @@ class StockService
                     // Update Inventory per product per outlet
                     $inventory = Inventory::where('product_id', $productId)->where('outlet_id', $outletId)->first();
                     $current_stock = $inventory ? $inventory->quantity : 0;
-                    $new_stock = $current_stock + $quantity;
+                    $new_stock = $current_stock + $movingQuantity;
 
                     if ($inventory) {
                         $inventory->quantity = $new_stock;
