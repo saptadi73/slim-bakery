@@ -151,4 +151,122 @@ class ReportService
             return JsonResponder::error($response, $e->getMessage(), 500);
         }
     }
+
+    public static function getOrderReportById(Response $response, $orderId)
+    {
+        try {
+            // Fetch specific order with related data
+            $order = Order::with([
+                'outlet',
+                'user',
+                'orderItems.product.category',
+                'orderItems.providers',
+                'orderItems.providers.deliveryOrderItems.deliveryOrder',
+                'orderItems.providers.deliveryOrderItems.receiveItems.receive'
+            ])->find($orderId);
+
+            if (!$order) {
+                return JsonResponder::error($response, 'Order tidak ditemukan', 404);
+            }
+
+            $report = [
+                'order_id' => $order->id,
+                'no_order' => $order->no_order,
+                'outlet_name' => $order->outlet->nama ?? null,
+                'pic_name' => $order->user->name ?? null,
+                'tanggal' => $order->tanggal,
+                'status' => $order->status,
+                'keterangan' => $order->keterangan,
+                'updated_at' => $order->updated_at,
+                'items' => [],
+            ];
+
+            foreach ($order->orderItems as $item) {
+                $itemReport = [
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product->nama ?? 'Unknown',
+                    'category' => $item->product->category->nama ?? null,
+                    'segments' => [
+                        'ordered' => [
+                            'quantity' => $item->quantity,
+                            'pic' => $item->pic,
+                            'tanggal' => $item->tanggal,
+                            'updated_at' => $item->updated_at,
+                            'keterangan' => $item->keterangan ?? null,
+                        ],
+                        'provided' => [
+                            'total_quantity' => $item->providers->sum('quantity'),
+                            'providers' => $item->providers->map(function ($provider) {
+                                return [
+                                    'provider_id' => $provider->id,
+                                    'nama' => $provider->nama ?? 'Unknown',
+                                    'quantity' => $provider->quantity,
+                                    'pic' => $provider->pic,
+                                    'tanggal' => $provider->tanggal,
+                                    'updated_at' => $provider->updated_at,
+                                    'keterangan' => $provider->keterangan ?? null,
+                                ];
+                            })->toArray(),
+                        ],
+                        'delivered' => [
+                            'total_quantity' => 0,
+                            'deliveries' => [],
+                        ],
+                        'received' => [
+                            'total_quantity' => 0,
+                            'receives' => [],
+                        ],
+                    ],
+                ];
+
+                // Collect deliveries
+                $deliveredQuantity = 0;
+                foreach ($item->providers as $provider) {
+                    foreach ($provider->deliveryOrderItems as $deliveryOrderItem) {
+                        if ($deliveryOrderItem->deliveryOrder) {
+                            $deliveredQuantity += $deliveryOrderItem->quantity;
+                            $itemReport['segments']['delivered']['deliveries'][] = [
+                                'delivery_order_id' => $deliveryOrderItem->deliveryOrder->id,
+                                'no_do' => $deliveryOrderItem->deliveryOrder->no_do,
+                                'quantity' => $deliveryOrderItem->quantity,
+                                'pic' => $deliveryOrderItem->pic,
+                                'tanggal' => $deliveryOrderItem->tanggal,
+                                'updated_at' => $deliveryOrderItem->updated_at,
+                                'keterangan' => $deliveryOrderItem->deliveryOrder->keterangan ?? null,
+                            ];
+                        }
+                    }
+                }
+                $itemReport['segments']['delivered']['total_quantity'] = $deliveredQuantity;
+
+                // Collect receives
+                $receivedQuantity = 0;
+                foreach ($item->providers as $provider) {
+                    foreach ($provider->deliveryOrderItems as $deliveryOrderItem) {
+                        foreach ($deliveryOrderItem->receiveItems as $receiveItem) {
+                            if ($receiveItem->receive) {
+                                $receivedQuantity += $receiveItem->quantity;
+                                $itemReport['segments']['received']['receives'][] = [
+                                    'receive_id' => $receiveItem->receive->id,
+                                    'no_rec' => $receiveItem->receive->no_rec,
+                                    'quantity' => $receiveItem->quantity,
+                                    'pic' => $receiveItem->pic,
+                                    'tanggal' => $receiveItem->tanggal,
+                                    'updated_at' => $receiveItem->updated_at,
+                                    'keterangan' => $receiveItem->receive->keterangan ?? null,
+                                ];
+                            }
+                        }
+                    }
+                }
+                $itemReport['segments']['received']['total_quantity'] = $receivedQuantity;
+
+                $report['items'][] = $itemReport;
+            }
+
+            return JsonResponder::success($response, $report, 'Laporan order berhasil diambil');
+        } catch (\Exception $e) {
+            return JsonResponder::error($response, $e->getMessage(), 500);
+        }
+    }
 }

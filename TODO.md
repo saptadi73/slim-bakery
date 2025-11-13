@@ -1,12 +1,14 @@
-# TODO: Implement Change Password Service
+# TODO: Create Order Report by Order ID
 
-- [x] Add changePassword method to UserService.php
-- [x] Add /change-password route to routes/api.php with JWT middleware
-- [x] Test the implementation (syntax check passed)
+## Tasks
+- [ ] Add new method `getOrderReportById` in `app/Services/ReportService.php` to generate report for a specific order_id
+- [ ] Update `routes/reports.php` to add new route `/reports/orders/{order_id}` that calls the new method
+- [ ] Test the new endpoint to ensure it returns the correct report structure
 
-# TODO: Fix Database Issues
-
-- [x] Fix constraint check violation in closeDeliveryOrder: change 'closed' to 'completed'
-- [x] Add missing 'keterangan' column to 'receives' table via migration
-- [x] Update migration_all.php to include 'keterangan' column addition
-- [x] Verify table structure and migration success
+## Report Structure
+- Order details: id, no_order, outlet, pic, tanggal, status, keterangan
+- For each product item:
+  - Ordered: quantity, pic, updated_at, keterangan (from order)
+  - Provided: total quantity from providers, list of providers with pic, updated_at, keterangan if any
+  - Delivered: total quantity from delivery orders, list of deliveries with pic, updated_at, keterangan if any
+  - Received: total quantity from receives, list of receives with pic, updated_at, keterangan

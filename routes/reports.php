@@ -21,5 +21,19 @@ return function (App $app) {
                 ], 500);
             }
         });
+
+        $r->get('/orders/{order_id}', function (Request $request, Response $response, array $args) use ($container) {
+            $svc = $container->get(ReportService::class);
+            try {
+                $orderId = (int) $args['order_id'];
+                return $svc->getOrderReportById($response, $orderId);
+            } catch (\Exception $e) {
+                return JsonResponder::error($response, [
+                    'message' => $e->getMessage(),
+                    'type'    => get_class($e),
+                    'file'    => $e->getFile() . ':' . $e->getLine(),
+                ], 500);
+            }
+        });
     });
 };
