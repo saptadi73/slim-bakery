@@ -141,6 +141,12 @@ return function (App $app) {
         return JsonResponder::error($response, $result['message'], 400);
     })->add(new JwtMiddleware());
 
+    // Daftar pengguna terdaftar
+    $app->get('/users', function ($request, $response) {
+        $users = UserService::listUsers();
+        return JsonResponder::success($response, $users, 'List of users');
+    })->add(new JwtMiddleware());
+
     $app->get('/roles', function ($request, $response) {
         try {
             return RoleService::listRoles($response);

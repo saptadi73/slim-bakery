@@ -19,6 +19,12 @@ class UserService
         return User::find($id);
     }
 
+    // Mendapatkan daftar pengguna terdaftar dengan nama dan email
+    public static function listUsers()
+    {
+        return User::select('id', 'name', 'email')->get();
+    }
+
     // Membuat pengguna baru dan mengaitkannya dengan role melalui tabel pivot
     public static function create($name, $email, $password, $role_id = null)
     {

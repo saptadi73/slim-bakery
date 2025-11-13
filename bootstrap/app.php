@@ -88,7 +88,8 @@ $capsule->addConnection([
 $capsule->setAsGlobal();
 $capsule->bootEloquent();
 
-date_default_timezone_set($_ENV['APP_TZ'] ?? 'Asia/Jakarta');
+// Set timezone to Indonesia (Asia/Jakarta)
+date_default_timezone_set('Asia/Jakarta');
 
 // Routes
 (require __DIR__ . '/../routes/index.php')($app);

@@ -221,7 +221,7 @@ try {
             user_id BIGINT NOT NULL,
             total DECIMAL(10,2) DEFAULT 0,
             status VARCHAR(50) DEFAULT 'open',
-            tanggal DATE,
+            tanggal TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (outlet_id) REFERENCES outlets(id) ON DELETE CASCADE,

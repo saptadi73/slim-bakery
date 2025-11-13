@@ -11,6 +11,10 @@ class OrderItem extends Model
     protected $fillable = ['order_id', 'product_id', 'outlet_id', 'quantity', 'tanggal', 'pic', 'status'];  // Kolom yang bisa diisi
     public $timestamps = true;
 
+    protected $casts = [
+        'tanggal' => 'date',
+    ];
+
     public function providers()
     {
         return $this->hasMany(Provider::class, 'order_items_id');

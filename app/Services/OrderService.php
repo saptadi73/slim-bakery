@@ -17,7 +17,7 @@ class OrderService
 
     public static function createOrder(Response $response, $data)
     {
-        $now = Carbon::now();
+        $now = Carbon::now('Asia/Jakarta');
         // Validasi data (bisa ditambahkan sesuai kebutuhan)
         if (!isset($data['items']) || !is_array($data['items']) || empty($data['items'])) {
             return JsonResponder::error($response, 'Data items tidak lengkap', 400);
@@ -48,7 +48,7 @@ class OrderService
                     'user_id' => $data['user_id'] ?? null,
                     'total' => $data['total'] ?? 0,
                     'status' => 'open',
-                    'tanggal' => $data['tanggal'] ?? null,
+                    'tanggal' => $data['tanggal'] ?? $now,
                 ]);
 
                 // Buat order items
@@ -150,10 +150,19 @@ class OrderService
     public static function getOrder(Response $response, $id)
     {
         try {
-            $order = Order::with(['orderItems.product', 'orderItems.outlet'])->find($id);
+            $order = Order::with(['orderItems.product', 'orderItems.outlet', 'outlet', 'user'])->find($id);
 
             if (!$order) {
                 return JsonResponder::error($response, 'Order tidak ditemukan', 404);
+            }
+
+            // Ensure outlet_name and pic_name are present on returned object. Prefer orders table values if present, otherwise use related outlet.
+            if (empty($order->outlet_name)) {
+                $order->outlet_name = $order->outlet->nama ?? null;
+            }
+            if (empty($order->pic_name)) {
+                // Prefer user.name as pic_name, fall back to outlet.gambar
+                $order->pic_name = $order->pic_name ?? ($order->user->name ?? ($order->outlet->gambar ?? null));
             }
 
             // Load providers for all order items to avoid N+1 queries
@@ -167,6 +176,11 @@ class OrderService
                 $item->quantity_order = $item->quantity;
                 $item->quantity_provider = $providerQuantity;
                 $item->provider_id = $itemProviders->first()->id ?? null;
+            }
+
+            // Convert tanggal to Indonesia timezone for frontend
+            if ($order->tanggal) {
+                $order->tanggal = $order->tanggal->setTimezone('Asia/Jakarta')->toISOString();
             }
 
             return JsonResponder::success($response, $order, 'Detail order berhasil diambil');
@@ -219,7 +233,7 @@ class OrderService
                             'outlet_id' => $item['outlet_id'],
                             'quantity' => $item['quantity'],
                             'pic' => $item['pic'] ?? null,
-                            'tanggal' => $item['tanggal'] ?? Carbon::now(),
+                            'tanggal' => $item['tanggal'] ?? Carbon::now('Asia/Jakarta'),
                             'status' => $item['status'] ?? 'open',
                         ]);
                         $updatedItemIds[] = $newItem->id;
