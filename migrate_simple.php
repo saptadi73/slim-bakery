@@ -112,6 +112,7 @@ try {
             kode VARCHAR(255),
             gambar VARCHAR(255),
             category_id BIGINT,
+            harga DECIMAL(12,2) DEFAULT 0,
             harga_jual DECIMAL(10,2) DEFAULT 0,
             harga_beli DECIMAL(10,2) DEFAULT 0,
             stok INTEGER DEFAULT 0,

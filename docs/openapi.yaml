@@ -1,0 +1,1303 @@
+openapi: 3.0.3
+info:
+  title: Slim Bakery API
+  version: 1.1.0
+  description: >-
+    API reference for Slim PHP 4 + Eloquent bakery application.
+    Updated with product harga field and current migration guidance (2026-05-06).
+servers:
+  - url: http://localhost/slim-eloquent-bakery/public
+    description: Local
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiSuccess:
+      type: object
+      properties:
+        status:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: OK
+        data:
+          nullable: true
+    ApiError:
+      type: object
+      properties:
+        status:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Error
+        data:
+          nullable: true
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        role_id:
+          type: integer
+        outlet_id:
+          type: integer
+    CategoryPayload:
+      type: object
+      properties:
+        nama:
+          type: string
+        keterangan:
+          type: string
+          nullable: true
+    ProductPayload:
+      type: object
+      properties:
+        nama:
+          type: string
+        kode:
+          type: string
+        category_id:
+          type: integer
+          nullable: true
+        harga:
+          type: number
+          format: float
+        gambar:
+          type: string
+          nullable: true
+    ProductMovingPayload:
+      type: object
+      required: [product_id, outlet_id, type, quantity]
+      properties:
+        product_id:
+          type: integer
+        outlet_id:
+          type: integer
+        type:
+          type: string
+          enum: [income, outcome]
+        quantity:
+          type: number
+        tanggal:
+          type: string
+          format: date-time
+        pic:
+          type: string
+        keterangan:
+          type: string
+    OrderCreatePayload:
+      type: object
+      required: [outlet_id, items]
+      properties:
+        outlet_id:
+          type: integer
+        user_id:
+          type: integer
+          nullable: true
+        total:
+          type: number
+        tanggal:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            type: object
+            required: [product_id, outlet_id, quantity]
+            properties:
+              id:
+                type: integer
+              product_id:
+                type: integer
+              outlet_id:
+                type: integer
+              quantity:
+                type: number
+              pic:
+                type: string
+              tanggal:
+                type: string
+                format: date-time
+              status:
+                type: string
+    ProviderMultiPayload:
+      type: object
+      required: [providers]
+      properties:
+        providers:
+          type: array
+          items:
+            type: object
+            required: [order_items_id, quantity]
+            properties:
+              order_items_id:
+                type: integer
+              quantity:
+                type: number
+              tanggal:
+                type: string
+                format: date-time
+              pic:
+                type: string
+    DeliveryOrderCreatePayload:
+      type: object
+      required: [items]
+      properties:
+        pic:
+          type: string
+        tanggal:
+          type: string
+          format: date-time
+        order_id:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            required: [provider_id, product_id, outlet_id, quantity]
+            properties:
+              id:
+                type: integer
+              provider_id:
+                type: integer
+              product_id:
+                type: integer
+              outlet_id:
+                type: integer
+              quantity:
+                type: number
+              pic:
+                type: string
+              tanggal:
+                type: string
+                format: date-time
+    ReceiveCreatePayload:
+      type: object
+      required: [delivery_order_id, items]
+      properties:
+        delivery_order_id:
+          type: integer
+        pic:
+          type: string
+        tanggal:
+          type: string
+          format: date-time
+        keterangan:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            required: [delivery_order_items_id, quantity]
+            properties:
+              id:
+                type: integer
+              delivery_order_items_id:
+                type: integer
+              quantity:
+                type: number
+              pic:
+                type: string
+              tanggal:
+                type: string
+                format: date-time
+paths:
+  /:
+    get:
+      tags: [System]
+      summary: Health message
+      responses:
+        '200':
+          description: Plain text welcome message
+
+  /register:
+    post:
+      tags: [Auth]
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /login:
+    post:
+      tags: [Auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Success with token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              example:
+                status: true
+                message: Login success
+                data:
+                  token: <jwt_token>
+                  user:
+                    id: 1
+                    name: Admin
+                    email: admin@mail.com
+                  role_id: 1
+                  role: admin
+                  outlet_id: 1
+                  outlet_name: Pusat
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: false
+                message: Invalid credentials
+                data: []
+
+  /update/role:
+    post:
+      tags: [Auth]
+      summary: Update user role
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, role_id]
+              properties:
+                user_id: { type: integer }
+                role_id: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /profile:
+    get:
+      tags: [Auth]
+      summary: Get profile
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Success }
+
+  /logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Success }
+
+  /users:
+    get:
+      tags: [User]
+      summary: List users
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Success }
+
+  /roles:
+    get:
+      tags: [User]
+      summary: List roles
+      responses:
+        '200': { description: Success }
+
+  /user/update/{id}:
+    post:
+      tags: [User]
+      summary: Update user
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200': { description: Success }
+
+  /user/delete/{id}:
+    post:
+      tags: [User]
+      summary: Delete user
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /change-password:
+    post:
+      tags: [User]
+      summary: Change password
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [old_password, new_password]
+              properties:
+                old_password: { type: string }
+                new_password: { type: string }
+      responses:
+        '200': { description: Success }
+
+  /categories:
+    get:
+      tags: [Category]
+      summary: List categories
+      responses:
+        '200': { description: Success }
+
+  /categories/new:
+    post:
+      tags: [Category]
+      summary: Create category
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryPayload'
+      responses:
+        '200': { description: Success }
+
+  /categories/{id}:
+    get:
+      tags: [Category]
+      summary: Get category by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+    post:
+      tags: [Category]
+      summary: Not used
+      responses:
+        '405': { description: Method not allowed }
+
+  /categories/update/{id}:
+    post:
+      tags: [Category]
+      summary: Update category
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryPayload'
+      responses:
+        '200': { description: Success }
+
+  /categories/delete/{id}:
+    post:
+      tags: [Category]
+      summary: Delete category
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /outlets:
+    get:
+      tags: [Outlet]
+      summary: List outlets by priority
+      responses:
+        '200': { description: Success }
+
+  /outlets/all:
+    get:
+      tags: [Outlet]
+      summary: List all outlets
+      responses:
+        '200': { description: Success }
+
+  /outlets/{id}:
+    get:
+      tags: [Outlet]
+      summary: Get outlet by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+    delete:
+      tags: [Outlet]
+      summary: Delete outlet
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /outlets/new:
+    post:
+      tags: [Outlet]
+      summary: Create outlet
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nama: { type: string }
+                alamat: { type: string }
+                phone: { type: string }
+                kode: { type: string }
+                prioritas: { type: integer }
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nama: { type: string }
+                alamat: { type: string }
+                phone: { type: string }
+                kode: { type: string }
+                prioritas: { type: integer }
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200': { description: Success }
+
+  /outlets/update/{id}:
+    post:
+      tags: [Outlet]
+      summary: Update outlet
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200': { description: Success }
+
+  /outlets/update/image/{id}:
+    post:
+      tags: [Outlet]
+      summary: Update outlet image
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200': { description: Success }
+
+  /products:
+    get:
+      tags: [Product]
+      summary: List products
+      responses:
+        '200': { description: Success }
+
+  /products/new:
+    post:
+      tags: [Product]
+      summary: Create product
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductPayload'
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nama: { type: string }
+                kode: { type: string }
+                category_id: { type: integer }
+                harga: { type: number }
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              example:
+                status: true
+                message: Produk berhasil dibuat
+                data:
+                  id: 1
+                  nama: Roti Coklat
+                  kode: RTC
+                  category_id: 1
+                  harga: 15000
+                  gambar: null
+                  created_at: '2026-05-06T10:00:00+07:00'
+                  updated_at: '2026-05-06T10:00:00+07:00'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                status: false
+                message: Field harga harus berupa angka dan tidak boleh negatif
+                data: []
+
+  /products/summary:
+    get:
+      tags: [Product]
+      summary: Product summary
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              example:
+                status: true
+                message: Ringkasan produk berhasil diambil
+                data:
+                  - id: 2
+                    nama: CAKE MINI CP
+                    kode: CKMC
+                    harga: 0
+                    stock: 0
+                    total_orders: 0
+                    total_harga: 0
+                    category: CAKE
+                  - id: 1
+                    nama: CAKE MINI
+                    kode: CKMN
+                    harga: 150000
+                    stock: 5
+                    total_orders: 3
+                    total_harga: 450000
+                    category: CAKE
+
+  /products/summary/roti:
+    get:
+      tags: [Product]
+      summary: Product summary roti
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              example:
+                status: true
+                message: Ringkasan produk kategori roti berhasil diambil
+                data:
+                  - id: 143
+                    nama: ABON ROLL
+                    kode: ABRO
+                    harga: 0
+                    stock: 0
+                    total_orders: 0
+                    total_harga: 0
+                    category: ROTI CP - ASIN
+
+  /products/{id}:
+    get:
+      tags: [Product]
+      summary: Get product by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /products/update/{id}:
+    post:
+      tags: [Product]
+      summary: Update product
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductPayload'
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nama: { type: string }
+                kode: { type: string }
+                category_id: { type: integer }
+                harga: { type: number }
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200': { description: Success }
+
+  /products/update/image/{id}:
+    post:
+      tags: [Product]
+      summary: Update product image
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200': { description: Success }
+
+  /products/delete/{id}:
+    post:
+      tags: [Product]
+      summary: Delete product
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /products/moving:
+    post:
+      tags: [Stock]
+      summary: Create stock movement
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductMovingPayload'
+      responses:
+        '200': { description: Success }
+
+  /products/inventory/{id}:
+    get:
+      tags: [Stock]
+      summary: Get inventory by product id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /products/moving/income:
+    post:
+      tags: [Stock]
+      summary: Create income movement
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductMovingPayload'
+      responses:
+        '200': { description: Success }
+
+  /productsmoving/multi/income:
+    post:
+      tags: [Stock]
+      summary: Create multi movement income (route as implemented)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [products]
+              properties:
+                products:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ProductMovingPayload'
+      responses:
+        '200': { description: Success }
+
+  /products/moving/multi:
+    post:
+      tags: [Stock]
+      summary: Create multi movement
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200': { description: Success }
+
+  /orders/new:
+    post:
+      tags: [Order]
+      summary: Create order
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreatePayload'
+      responses:
+        '200': { description: Success }
+
+  /orders/list:
+    get:
+      tags: [Order]
+      summary: List orders
+      responses:
+        '200': { description: Success }
+
+  /orders/list-all:
+    get:
+      tags: [Order]
+      summary: List all orders
+      responses:
+        '200': { description: Success }
+
+  /orders/list/{outlet_id}:
+    get:
+      tags: [Order]
+      summary: List orders by outlet
+      parameters:
+        - in: path
+          name: outlet_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /orders/products:
+    get:
+      tags: [Order]
+      summary: Aggregate open order by products
+      responses:
+        '200': { description: Success }
+
+  /orders/outlets/{id}:
+    get:
+      tags: [Order]
+      summary: Aggregate order by outlet
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /orders/products/{id}:
+    get:
+      tags: [Order]
+      summary: Detail order items by product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /orders/groups:
+    get:
+      tags: [Order]
+      summary: Aggregate order by outlets
+      responses:
+        '200': { description: Success }
+
+  /orders/leftjoin/{id}:
+    get:
+      tags: [Order]
+      summary: Left join product-order by outlet
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /orders/{id}:
+    get:
+      tags: [Order]
+      summary: Get order detail
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+    put:
+      tags: [Order]
+      summary: Update order
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreatePayload'
+      responses:
+        '200': { description: Success }
+    delete:
+      tags: [Order]
+      summary: Delete order
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /orders/{id}/with-product-id:
+    get:
+      tags: [Order]
+      summary: Get order detail with product id fields
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /orders/providers:
+    post:
+      tags: [Provider]
+      summary: Create providers
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderMultiPayload'
+      responses:
+        '200': { description: Success }
+
+  /orders/providers/single:
+    post:
+      tags: [Provider]
+      summary: Create single provider
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [order_items_id]
+              properties:
+                order_items_id: { type: integer }
+                quantity: { type: number }
+                tanggal: { type: string, format: date-time }
+                pic: { type: string }
+      responses:
+        '200': { description: Success }
+
+  /orders/providers/multi:
+    post:
+      tags: [Provider]
+      summary: Create multi providers
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderMultiPayload'
+      responses:
+        '200': { description: Success }
+
+  /orders/providers/{id}:
+    put:
+      tags: [Provider]
+      summary: Update provider
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity: { type: number }
+                tanggal: { type: string, format: date-time }
+                pic: { type: string }
+      responses:
+        '200': { description: Success }
+
+  /delivery-orders/new:
+    post:
+      tags: [DeliveryOrder]
+      summary: Create delivery order
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryOrderCreatePayload'
+      responses:
+        '200': { description: Success }
+
+  /delivery-orders/list:
+    get:
+      tags: [DeliveryOrder]
+      summary: List delivery orders
+      responses:
+        '200': { description: Success }
+
+  /delivery-orders/list/{outlet_id}:
+    get:
+      tags: [DeliveryOrder]
+      summary: List delivery orders by outlet
+      parameters:
+        - in: path
+          name: outlet_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /delivery-orders/{id}:
+    get:
+      tags: [DeliveryOrder]
+      summary: Get delivery order detail
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+    put:
+      tags: [DeliveryOrder]
+      summary: Update delivery order
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryOrderCreatePayload'
+      responses:
+        '200': { description: Success }
+    delete:
+      tags: [DeliveryOrder]
+      summary: Delete delivery order
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /delivery-orders/{id}/close:
+    post:
+      tags: [DeliveryOrder]
+      summary: Close delivery order
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /receives/new:
+    post:
+      tags: [Receive]
+      summary: Create receive
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiveCreatePayload'
+      responses:
+        '200': { description: Success }
+
+  /receives/list:
+    get:
+      tags: [Receive]
+      summary: List receives
+      responses:
+        '200': { description: Success }
+
+  /receives/{id}:
+    get:
+      tags: [Receive]
+      summary: Get receive detail
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+    put:
+      tags: [Receive]
+      summary: Update receive
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiveCreatePayload'
+      responses:
+        '200': { description: Success }
+    delete:
+      tags: [Receive]
+      summary: Delete receive
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /receives/delivery-order/{delivery_order_id}:
+    get:
+      tags: [Receive]
+      summary: Get receive by delivery order id
+      parameters:
+        - in: path
+          name: delivery_order_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /reports/orders:
+    get:
+      tags: [Report]
+      summary: Order report summary and details
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+              example:
+                status: true
+                message: Laporan order berhasil diambil
+                data:
+                  summary:
+                    total_orders: 12
+                    orders_delivered: 7
+                    orders_closed: 4
+                    orders_with_discrepancies: 2
+                    total_order_items: 38
+                    items_provided: 30
+                    items_delivered: 28
+                    items_received: 27
+                    items_with_discrepancies: 3
+                    total_ordered_value: 2450000
+                  details:
+                    - order_id: 101
+                      no_order: ORDER-00101
+                      outlet_name: Pusat
+                      pic_name: Admin
+                      tanggal: '2026-05-06T08:00:00+07:00'
+                      status: open
+                      keterangan: null
+                      total_ordered_quantity: 8
+                      total_delivered_quantity: 6
+                      total_received_quantity: 6
+                      total_ordered_value: 120000
+                      has_discrepancies: true
+                      items:
+                        - product_id: 1
+                          product_name: Roti Coklat
+                          harga: 15000
+                          quantity_ordered: 8
+                          subtotal_ordered: 120000
+                          status: open
+                          provided: true
+                          delivered: false
+                          received: false
+                          discrepancy: true
+                          providers: []
+
+  /reports/orders/{order_id}:
+    get:
+      tags: [Report]
+      summary: Order report by id
+      parameters:
+        - in: path
+          name: order_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Success }
+
+  /seeds/products:
+    get:
+      tags: [Seed]
+      summary: Seed products
+      responses:
+        '200': { description: Success }
+
+  /seeds/outlets:
+    get:
+      tags: [Seed]
+      summary: Seed outlets
+      responses:
+        '200': { description: Success }
+
+  /seeds/orders:
+    get:
+      tags: [Seed]
+      summary: Seed orders
+      responses:
+        '200': { description: Success }

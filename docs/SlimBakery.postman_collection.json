@@ -1,0 +1,296 @@
+{
+  "info": {
+    "name": "Slim Bakery API",
+    "description": "Postman collection for Slim Bakery API (updated 2026-05-06, includes harga-related endpoints and auto-save JWT token on Login)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost/slim-eloquent-bakery/public"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin\",\n  \"email\": \"admin@mail.com\",\n  \"password\": \"secret\",\n  \"role_id\": 1,\n  \"outlet_id\": 1\n}"
+            },
+            "url": "{{base_url}}/register"
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@mail.com\",\n  \"password\": \"secret\"\n}"
+            },
+            "url": "{{base_url}}/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "let jsonData = {};",
+                  "try {",
+                  "  jsonData = pm.response.json();",
+                  "} catch (e) {",
+                  "  console.log('Response is not JSON');",
+                  "}",
+                  "",
+                  "if (jsonData && jsonData.data && jsonData.data.token) {",
+                  "  pm.collectionVariables.set('token', jsonData.data.token);",
+                  "  pm.test('Token saved to collection variable', function () {",
+                  "    pm.expect(pm.collectionVariables.get('token')).to.be.a('string');",
+                  "  });",
+                  "} else {",
+                  "  pm.test('Token exists in response', function () {",
+                  "    pm.expect.fail('Token not found at data.token');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": { "method": "GET", "url": "{{base_url}}/categories" }
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"ROTI\",\n  \"keterangan\": \"Kategori roti\"\n}"
+            },
+            "url": "{{base_url}}/categories/new"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": { "method": "GET", "url": "{{base_url}}/products" }
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Roti Coklat\",\n  \"kode\": \"RTC\",\n  \"category_id\": 1,\n  \"harga\": 15000\n}"
+            },
+            "url": "{{base_url}}/products/new"
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Roti Coklat Premium\",\n  \"harga\": 17500\n}"
+            },
+            "url": "{{base_url}}/products/update/1"
+          }
+        },
+        {
+          "name": "Products Summary",
+          "request": { "method": "GET", "url": "{{base_url}}/products/summary" }
+        },
+        {
+          "name": "Create Product Moving",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": 1,\n  \"outlet_id\": 1,\n  \"type\": \"income\",\n  \"quantity\": 10,\n  \"pic\": \"admin\",\n  \"keterangan\": \"initial stock\"\n}"
+            },
+            "url": "{{base_url}}/products/moving"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"outlet_id\": 1,\n  \"user_id\": 1,\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"outlet_id\": 1,\n      \"quantity\": 3,\n      \"pic\": \"admin\"\n    }\n  ]\n}"
+            },
+            "url": "{{base_url}}/orders/new"
+          }
+        },
+        {
+          "name": "List Orders",
+          "request": { "method": "GET", "url": "{{base_url}}/orders/list" }
+        },
+        {
+          "name": "Order Detail",
+          "request": { "method": "GET", "url": "{{base_url}}/orders/1" }
+        },
+        {
+          "name": "Create Providers",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"providers\": [\n    {\n      \"order_items_id\": 1,\n      \"quantity\": 3,\n      \"pic\": \"admin\"\n    }\n  ]\n}"
+            },
+            "url": "{{base_url}}/orders/providers"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delivery Orders",
+      "item": [
+        {
+          "name": "Create Delivery Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pic\": \"admin\",\n  \"items\": [\n    {\n      \"provider_id\": 1,\n      \"product_id\": 1,\n      \"outlet_id\": 1,\n      \"quantity\": 3\n    }\n  ]\n}"
+            },
+            "url": "{{base_url}}/delivery-orders/new"
+          }
+        },
+        {
+          "name": "List Delivery Orders",
+          "request": { "method": "GET", "url": "{{base_url}}/delivery-orders/list" }
+        }
+      ]
+    },
+    {
+      "name": "Receives",
+      "item": [
+        {
+          "name": "Create Receive",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_order_id\": 1,\n  \"pic\": \"receiver\",\n  \"items\": [\n    {\n      \"delivery_order_items_id\": 1,\n      \"quantity\": 3\n    }\n  ]\n}"
+            },
+            "url": "{{base_url}}/receives/new"
+          }
+        },
+        {
+          "name": "List Receives",
+          "request": { "method": "GET", "url": "{{base_url}}/receives/list" }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Order Reports",
+          "request": { "method": "GET", "url": "{{base_url}}/reports/orders" }
+        },
+        {
+          "name": "Order Report By ID",
+          "request": { "method": "GET", "url": "{{base_url}}/reports/orders/1" }
+        }
+      ]
+    },
+    {
+      "name": "Seeds",
+      "item": [
+        {
+          "name": "Seed Products",
+          "request": { "method": "GET", "url": "{{base_url}}/seeds/products" }
+        },
+        {
+          "name": "Seed Outlets",
+          "request": { "method": "GET", "url": "{{base_url}}/seeds/outlets" }
+        },
+        {
+          "name": "Seed Orders",
+          "request": { "method": "GET", "url": "{{base_url}}/seeds/orders" }
+        }
+      ]
+    }
+  ]
+}

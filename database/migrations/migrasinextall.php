@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * WARNING: Deprecated migration script.
+ *
+ * Gunakan migration_all.php untuk setup server baru karena file ini
+ * tidak mencerminkan struktur schema terbaru (legacy schema).
+ * File ini dipertahankan hanya untuk referensi historis.
+ */
+
 require __DIR__ . '/../../vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->safeLoad();
@@ -21,6 +29,8 @@ $c->setAsGlobal();
 $c->bootEloquent();
 
 $schema = Capsule::schema();
+
+echo "[DEPRECATED] migrasinextall.php adalah migrasi lama. Gunakan migration_all.php untuk server baru.\n";
 
 
 
@@ -78,6 +88,7 @@ if (!$schema->hasTable('products')) {
         $t->string('kode')->nullable();
         $t->string('gambar')->nullable();
         $t->unsignedBigInteger('category_id');
+        $t->decimal('harga', 12, 2)->default(0);
         $t->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
         $t->timestamps();
     });

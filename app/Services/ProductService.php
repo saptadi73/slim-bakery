@@ -9,6 +9,15 @@ use Psr\Http\Message\UploadedFileInterface;
 
 class ProductService
 {
+    private static function normalizeHarga($value): float
+    {
+        if ($value === null || $value === '') {
+            return 0;
+        }
+
+        return is_numeric($value) ? (float) $value : 0;
+    }
+
     public static function listProducts(Response $response)
     {
         try {
@@ -32,19 +41,26 @@ class ProductService
         }
     }
 
-    public static function createProduct(Response $response, $data, UploadedFileInterface $file)
+    public static function createProduct(Response $response, $data, ?UploadedFileInterface $file = null)
     {
 
         if (empty($data['nama']) || empty($data['kode'])) {
             return JsonResponder::error($response, 'Data tidak lengkap', 400);
         }
 
+        if (isset($data['harga']) && (!is_numeric($data['harga']) || (float) $data['harga'] < 0)) {
+            return JsonResponder::error($response, 'Field harga harus berupa angka dan tidak boleh negatif', 422);
+        }
+
         try {
+            $harga = self::normalizeHarga($data['harga'] ?? ($data['harga_jual'] ?? 0));
+
             $product = Product::create([
                 'nama' => $data['nama'],
                 'kode' => $data['kode'],
                 'gambar' => $data['gambar'] ?? null,
                 'category_id' => $data['category_id'] ?? null,
+                'harga' => $harga,
             ]);
 
             if ($file && $file->getError() === UPLOAD_ERR_OK) {
@@ -107,10 +123,17 @@ class ProductService
             return JsonResponder::error($response, 'Produk tidak ditemukan', 404);
         }
 
+        if (isset($data['harga']) && (!is_numeric($data['harga']) || (float) $data['harga'] < 0)) {
+            return JsonResponder::error($response, 'Field harga harus berupa angka dan tidak boleh negatif', 422);
+        }
+
         // Update data dasar
         $product->nama = $data['nama'] ?? $product->nama;
         $product->kode = $data['kode'] ?? $product->kode;
         $product->category_id = $data['category_id'] ?? $product->category_id;
+        if (array_key_exists('harga', $data)) {
+            $product->harga = self::normalizeHarga($data['harga']);
+        }
 
         // Jika ada file baru, update gambar; jika tidak, biarkan gambar tetap
         if ($file && $file->getError() === UPLOAD_ERR_OK) {
@@ -154,19 +177,22 @@ class ProductService
             $products = Product::with('category')->get();
 
             $summary = $products->map(function ($product) {
-                // Get stock from inventory
-                $inventory = \App\Models\Inventory::where('product_id', $product->id)->first();
-                $stock = $inventory ? $inventory->quantity : 0;
+                // Ambil total stok lintas outlet
+                $stock = (int) \App\Models\Inventory::where('product_id', $product->id)->sum('quantity');
 
-                // Get total orders (sum of quantities from order_items where status is 'open')
-                $totalOrders = \App\Models\OrderItem::where('product_id', $product->id)->where('status', 'open')->sum('quantity');
+                // Ambil total order dari semua status item agar ringkasan nilai order akurat
+                $totalOrders = (int) \App\Models\OrderItem::where('product_id', $product->id)->sum('quantity');
+                $harga = (float) ($product->harga ?? 0);
+                $totalHarga = $harga * $totalOrders;
 
                 return [
                     'id' => $product->id,
                     'nama' => $product->nama,
                     'kode' => $product->kode,
+                    'harga' => $harga,
                     'stock' => $stock,
                     'total_orders' => $totalOrders,
+                    'total_harga' => $totalHarga,
                     'category' => $product->category ? $product->category->nama : null,
                 ];
             });
@@ -183,19 +209,22 @@ class ProductService
             $products = Product::with('category')->where('category_id','>=', 1)->get();
 
             $summary = $products->map(function ($product) {
-                // Get stock from inventory
-                $inventory = \App\Models\Inventory::where('product_id', $product->id)->first();
-                $stock = $inventory ? $inventory->quantity : 0;
+                // Ambil total stok lintas outlet
+                $stock = (int) \App\Models\Inventory::where('product_id', $product->id)->sum('quantity');
 
-                // Get total orders (sum of quantities from order_items where status is 'open')
-                $totalOrders = \App\Models\OrderItem::where('product_id', $product->id)->where('status', 'open')->sum('quantity');
+                // Ambil total order dari semua status item agar ringkasan nilai order akurat
+                $totalOrders = (int) \App\Models\OrderItem::where('product_id', $product->id)->sum('quantity');
+                $harga = (float) ($product->harga ?? 0);
+                $totalHarga = $harga * $totalOrders;
 
                 return [
                     'id' => $product->id,
                     'nama' => $product->nama,
                     'kode' => $product->kode,
+                    'harga' => $harga,
                     'stock' => $stock,
                     'total_orders' => $totalOrders,
+                    'total_harga' => $totalHarga,
                     'category' => $product->category ? $product->category->nama : null,
                 ];
             });

@@ -8,6 +8,7 @@ use App\Supports\JsonResponder;
 use App\Supports\RequestHelper;
 use Firebase\JWT\JWT;
 use App\Middlewares\JwtMiddleware;
+use Illuminate\Database\Capsule\Manager as Capsule;
 
 return function (App $app) {
     // Route home
@@ -16,35 +17,70 @@ return function (App $app) {
         return $response;
     });
 
+    // Health check endpoint for quick startup verification
+    $app->get('/health', function ($request, $response) {
+        $dbStatus = [
+            'connected' => false,
+            'driver' => $_ENV['DB_DRIVER'] ?? null,
+            'host' => $_ENV['DB_HOST'] ?? null,
+            'database' => $_ENV['DB_DATABASE'] ?? null,
+            'error' => null,
+        ];
+
+        try {
+            Capsule::connection()->getPdo();
+            $dbStatus['connected'] = true;
+        } catch (\Throwable $e) {
+            $dbStatus['error'] = $e->getMessage();
+        }
+
+        return JsonResponder::success($response, [
+            'app' => 'slim-eloquent-bakery',
+            'framework' => 'Slim 4',
+            'status' => 'running',
+            'php_version' => PHP_VERSION,
+            'timestamp' => date('c'),
+            'database' => $dbStatus,
+        ], 'Service is healthy');
+    });
+
     // Registrasi pengguna dengan role
     $app->post('/register', function ($request, $response) {
-        $data = RequestHelper::getJsonBody($request);
+        try {
+            $data = RequestHelper::getJsonBody($request);
 
-        // Validasi input
-        if (empty($data['name']) || empty($data['email']) || empty($data['password'])) {
-            return JsonResponder::error($response, 'Invalid input', 400);
-        }
-
-        // Jika role_id diberikan, gunakan itu, jika tidak gunakan default 'user'
-        $role_id = $data['role_id'] ?? null;
-        if (!$role_id) {
-            $role = \App\Models\Role::where('name', 'user')->first();
-            if (!$role) {
-                return JsonResponder::error($response, 'Default role not found', 404);
+            // Validasi input
+            if (empty($data['name']) || empty($data['email']) || empty($data['password'])) {
+                return JsonResponder::error($response, 'Invalid input', 400);
             }
-            $role_id = $role->id;
-        } else {
-            // Validasi role_id yang diberikan
-            $role = \App\Models\Role::find($role_id);
-            if (!$role) {
-                return JsonResponder::error($response, 'Role not found', 404);
+
+            // Jika role_id diberikan, gunakan itu, jika tidak gunakan default 'user'
+            $role_id = $data['role_id'] ?? null;
+            if (!$role_id) {
+                $role = \App\Models\Role::where('name', 'user')->first();
+                if (!$role) {
+                    return JsonResponder::error($response, 'Default role not found', 404);
+                }
+                $role_id = $role->id;
+            } else {
+                // Validasi role_id yang diberikan
+                $role = \App\Models\Role::find($role_id);
+                if (!$role) {
+                    return JsonResponder::error($response, 'Role not found', 404);
+                }
             }
+
+            // Panggil fungsi register untuk membuat user baru
+            $result = AuthService::register($data['name'], $data['email'], $data['password'], $role_id, $data['outlet_id'] ?? null);
+
+            if (!$result['status']) {
+                return JsonResponder::error($response, $result['message'], 400, $result['data'] ?? []);
+            }
+
+            return JsonResponder::success($response, $result['data'], 'User registered');
+        } catch (\Throwable $e) {
+            return JsonResponder::error($response, 'Register gagal: ' . $e->getMessage(), 500);
         }
-
-        // Panggil fungsi register untuk membuat user baru
-        $user = AuthService::register($data['name'], $data['email'], $data['password'], $role_id, $data['outlet_id'] ?? null);
-
-        return JsonResponder::success($response, $user, 'User registered');
     });
 
     // Login pengguna

@@ -9,7 +9,12 @@ class Product extends Model
     protected $primaryKey = 'id';   // Kunci utama
     protected $keyType = 'int';    // Tipe kunci utama
     public $incrementing = true; // Kunci utama auto-increment
-    protected $fillable = ['nama', 'kode', 'gambar', 'category_id', 'harga_jual', 'harga_beli', 'stok', 'status'];  // Kolom yang bisa diisi
+    protected $fillable = ['nama', 'kode', 'gambar', 'category_id', 'harga', 'harga_jual', 'harga_beli', 'stok', 'status'];  // Kolom yang bisa diisi
+    protected $casts = [
+        'harga' => 'float',
+        'harga_jual' => 'float',
+        'harga_beli' => 'float',
+    ];
     public $timestamps = true;
 
     public function orderItems()

@@ -19,6 +19,9 @@ return function (App $app) {
         $cust->post('/new', function (Request $request, Response $response) use ($container) {
             $svc = $container->get(ProductService::class);
             $data = RequestHelper::getJsonBody($request);
+            if (isset($data['harga']) && is_numeric($data['harga'])) {
+                $data['harga'] = (float) $data['harga'];
+            }
             $file = RequestHelper::getUploadedFiles($request)['file'] ?? null;
             try {
                 return $svc->createProduct($response, $data, $file);
@@ -49,6 +52,9 @@ return function (App $app) {
             $id = (int)$args['id'];
             $svc = $container->get(ProductService::class);
             $data = RequestHelper::getJsonBody($request);
+            if (isset($data['harga']) && is_numeric($data['harga'])) {
+                $data['harga'] = (float) $data['harga'];
+            }
             $file = RequestHelper::getUploadedFiles($request)['file'] ?? null;
             try {
                 return $svc->updateProduct($response, $id, $data, $file);

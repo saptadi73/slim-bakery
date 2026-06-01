@@ -3,8 +3,6 @@
 namespace App\Services;
 
 use App\Models\Order;
-use App\Models\DeliveryOrder;
-use App\Models\Receive;
 use App\Supports\JsonResponder;
 use Psr\Http\Message\ResponseInterface as Response;
 
@@ -32,6 +30,7 @@ class ReportService
                 'items_delivered' => 0,
                 'items_received' => 0,
                 'items_with_discrepancies' => 0,
+                'total_ordered_value' => 0,
             ];
 
             $details = [];
@@ -48,6 +47,7 @@ class ReportService
                     'total_ordered_quantity' => 0,
                     'total_delivered_quantity' => 0,
                     'total_received_quantity' => 0,
+                    'total_ordered_value' => 0,
                     'items' => [],
                     'has_discrepancies' => false,
                 ];
@@ -64,11 +64,14 @@ class ReportService
 
                 foreach ($order->orderItems as $item) {
                     $summary['total_order_items']++;
+                    $unitPrice = (float) ($item->product->harga ?? 0);
 
                     $itemDetail = [
                         'product_id' => $item->product_id,
                         'product_name' => $item->product->nama ?? 'Unknown',
+                        'harga' => $unitPrice,
                         'quantity_ordered' => $item->quantity,
+                        'subtotal_ordered' => $unitPrice * $item->quantity,
                         'status' => $item->status,
                         'provided' => false,
                         'delivered' => false,
@@ -84,6 +87,8 @@ class ReportService
                     ];
 
                     $orderDetail['total_ordered_quantity'] += $item->quantity;
+                    $orderDetail['total_ordered_value'] += $itemDetail['subtotal_ordered'];
+                    $summary['total_ordered_value'] += $itemDetail['subtotal_ordered'];
 
                     // Check if provided (has providers with sufficient quantity or status is provided)
                     $totalProvidedQuantity = $item->providers->sum('quantity');
@@ -185,10 +190,12 @@ class ReportService
                 $itemReport = [
                     'product_id' => $item->product_id,
                     'product_name' => $item->product->nama ?? 'Unknown',
+                    'harga' => (float) ($item->product->harga ?? 0),
                     'category' => $item->product->category->nama ?? null,
                     'segments' => [
                         'ordered' => [
                             'quantity' => $item->quantity,
+                            'subtotal' => ((float) ($item->product->harga ?? 0)) * $item->quantity,
                             'pic' => $item->pic,
                             'tanggal' => $item->tanggal,
                             'updated_at' => $item->updated_at,

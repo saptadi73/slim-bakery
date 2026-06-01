@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Role;
 use Firebase\JWT\JWT;
 use App\Supports\JsonResponder;
+use Illuminate\Database\Capsule\Manager as Capsule;
 
 class AuthService
 {
@@ -78,17 +79,14 @@ class AuthService
             $role_id = $role->id;  // Assign role_id default
         }
 
-        // Membuat user baru tanpa menyertakan role_id pada tabel 'users'
-        $user = User::create([
-            'name' => $name,
-            'email' => $email,
-            'password' => password_hash($password, PASSWORD_DEFAULT)  // Enkripsi password
-        ]);
-
-
-
-        // Menyambungkan pengguna dengan role yang diberikan melalui pivot table role_user
-        $user->roles()->attach($role_id);  // Menambahkan relasi pada tabel pivot 'role_user'
+        // Cegah error unique constraint dan berikan pesan yang jelas
+        if (User::where('email', $email)->exists()) {
+            return [
+                'status' => false,
+                'message' => 'Email sudah terdaftar',
+                'data' => []
+            ];
+        }
 
         // Menyambungkan user ke outlet (user_outlet), default ke outlet dengan kode 'DEFAULT' jika null
         if ($outlet_id === null) {
@@ -96,11 +94,42 @@ class AuthService
             if ($defaultOutlet) {
                 $outlet_id = $defaultOutlet->id;
             } else {
-                // Jika tidak ada default outlet, buat atau gunakan ID 1 sebagai fallback
-                $outlet_id = 1;
+                $firstOutlet = \App\Models\Outlet::orderBy('id')->first();
+                if ($firstOutlet) {
+                    $outlet_id = $firstOutlet->id;
+                } else {
+                    return [
+                        'status' => false,
+                        'message' => 'Outlet default tidak ditemukan. Isi outlet_id saat register atau buat outlet terlebih dahulu.',
+                        'data' => []
+                    ];
+                }
             }
         }
-        $user->outlets()->attach($outlet_id);
+
+        $outlet = \App\Models\Outlet::find($outlet_id);
+        if (!$outlet) {
+            return [
+                'status' => false,
+                'message' => 'Outlet tidak ditemukan',
+                'data' => []
+            ];
+        }
+
+        $user = Capsule::connection()->transaction(function () use ($name, $email, $password, $role_id, $outlet_id) {
+            // Membuat user baru tanpa menyertakan role_id pada tabel 'users'
+            $user = User::create([
+                'name' => $name,
+                'email' => $email,
+                'password' => password_hash($password, PASSWORD_DEFAULT)  // Enkripsi password
+            ]);
+
+            // Menyambungkan pengguna dengan role yang diberikan melalui pivot table role_user
+            $user->roles()->attach($role_id);  // Menambahkan relasi pada tabel pivot 'role_user'
+            $user->outlets()->attach($outlet_id);
+
+            return $user;
+        });
 
         return [
             'status' => true,
