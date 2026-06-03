@@ -18,10 +18,44 @@ class ProductService
         return is_numeric($value) ? (float) $value : 0;
     }
 
+    private static function valuesMatch(string $field, $expected, $actual): bool
+    {
+        if ($expected === null || $actual === null) {
+            return $expected === $actual;
+        }
+
+        if (in_array($field, ['harga', 'harga_jual', 'harga_beli'], true)) {
+            return abs((float) $expected - (float) $actual) < 0.00001;
+        }
+
+        if ($field === 'category_id') {
+            return (int) $expected === (int) $actual;
+        }
+
+        return (string) $expected === (string) $actual;
+    }
+
+    private static function persistAndVerify(Product $product, array $expectedChanges): ?string
+    {
+        if (!$product->save()) {
+            return 'Perubahan produk gagal disimpan';
+        }
+
+        $product->refresh();
+
+        foreach ($expectedChanges as $field => $expectedValue) {
+            if (!self::valuesMatch($field, $expectedValue, $product->{$field})) {
+                return "Perubahan field {$field} belum tersimpan di database";
+            }
+        }
+
+        return null;
+    }
+
     public static function listProducts(Response $response)
     {
         try {
-            $products = Product::with('category')->get();
+            $products = Product::with('category')->orderBy('id', 'asc')->get();
             return JsonResponder::success($response, $products, 'Daftar produk berhasil diambil');
         } catch (\Exception $e) {
             return JsonResponder::error($response, $e->getMessage(), 500);
@@ -158,11 +192,19 @@ class ProductService
         // Jika file tidak ada atau null, field gambar tidak diubah
 
         if (!$product->isDirty()) {
-            return JsonResponder::success($response, $product, 'Tidak ada perubahan data produk');
+            return JsonResponder::error($response, 'Tidak ada perubahan data produk untuk disimpan', 400, $product);
         }
 
-        $product->save();
-        return JsonResponder::success($response, $product, 'Produk berhasil diupdate');
+        $expectedChanges = $product->getDirty();
+        $saveError = self::persistAndVerify($product, $expectedChanges);
+        if ($saveError !== null) {
+            return JsonResponder::error($response, $saveError, 500, [
+                'expected' => $expectedChanges,
+                'actual' => $product->only(array_keys($expectedChanges)),
+            ]);
+        }
+
+        return JsonResponder::success($response, $product, 'Produk berhasil diupdate dan tersimpan');
     }
 
     public static function deleteProduct(Response $response, $id)

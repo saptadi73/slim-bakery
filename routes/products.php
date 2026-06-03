@@ -5,6 +5,7 @@ use Slim\Routing\RouteCollectorProxy;
 use App\Services\ProductService;
 use App\Supports\JsonResponder;
 use App\Supports\RequestHelper;
+use App\Supports\DebugLogger;
 use App\Middlewares\JwtMiddleware;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -52,13 +53,47 @@ return function (App $app) {
             $id = (int)$args['id'];
             $svc = $container->get(ProductService::class);
             $data = RequestHelper::getJsonBody($request);
+            $endpoint = $request->getMethod() . ' ' . (string) $request->getUri();
             if (isset($data['harga']) && is_numeric($data['harga'])) {
                 $data['harga'] = (float) $data['harga'];
             }
             $file = RequestHelper::getUploadedFiles($request)['file'] ?? null;
             try {
-                return $svc->updateProduct($response, $id, $data, $file);
+                $result = $svc->updateProduct($response, $id, $data, $file);
+                $responseBody = $result->getBody();
+                $responseBody->rewind();
+                $body = $responseBody->getContents();
+                $responseBody->rewind();
+
+                DebugLogger::write('product-update-debug.log', [
+                    'event' => 'product_update_response',
+                    'endpoint' => $endpoint,
+                    'product_id' => $id,
+                    'payload' => $data,
+                    'file' => $file ? [
+                        'client_filename' => $file->getClientFilename(),
+                        'media_type' => $file->getClientMediaType(),
+                        'size' => $file->getSize(),
+                        'error' => $file->getError(),
+                    ] : null,
+                    'response_status' => $result->getStatusCode(),
+                    'response' => json_decode($body, true) ?: $body,
+                ]);
+
+                return $result;
             } catch (\Exception $e) {
+                DebugLogger::write('product-update-debug.log', [
+                    'event' => 'product_update_exception',
+                    'endpoint' => $endpoint,
+                    'product_id' => $id,
+                    'payload' => $data,
+                    'exception' => [
+                        'message' => $e->getMessage(),
+                        'type' => get_class($e),
+                        'file' => $e->getFile() . ':' . $e->getLine(),
+                    ],
+                ]);
+
                 return JsonResponder::error($response, [
                     'message' => $e->getMessage(),
                     'type'    => get_class($e),
