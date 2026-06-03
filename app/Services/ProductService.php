@@ -123,16 +123,26 @@ class ProductService
             return JsonResponder::error($response, 'Produk tidak ditemukan', 404);
         }
 
-        if (isset($data['harga']) && (!is_numeric($data['harga']) || (float) $data['harga'] < 0)) {
+        $hasHarga = array_key_exists('harga', $data);
+        $hasHargaJual = array_key_exists('harga_jual', $data);
+
+        if ($hasHarga && (!is_numeric($data['harga']) || (float) $data['harga'] < 0)) {
             return JsonResponder::error($response, 'Field harga harus berupa angka dan tidak boleh negatif', 422);
+        }
+        if ($hasHargaJual && (!is_numeric($data['harga_jual']) || (float) $data['harga_jual'] < 0)) {
+            return JsonResponder::error($response, 'Field harga_jual harus berupa angka dan tidak boleh negatif', 422);
         }
 
         // Update data dasar
         $product->nama = $data['nama'] ?? $product->nama;
         $product->kode = $data['kode'] ?? $product->kode;
         $product->category_id = $data['category_id'] ?? $product->category_id;
-        if (array_key_exists('harga', $data)) {
+
+        // Tetap terima harga_jual untuk kompatibilitas payload frontend lama.
+        if ($hasHarga) {
             $product->harga = self::normalizeHarga($data['harga']);
+        } elseif ($hasHargaJual) {
+            $product->harga = self::normalizeHarga($data['harga_jual']);
         }
 
         // Jika ada file baru, update gambar; jika tidak, biarkan gambar tetap
@@ -146,6 +156,10 @@ class ProductService
             $product->gambar = $filename;
         }
         // Jika file tidak ada atau null, field gambar tidak diubah
+
+        if (!$product->isDirty()) {
+            return JsonResponder::success($response, $product, 'Tidak ada perubahan data produk');
+        }
 
         $product->save();
         return JsonResponder::success($response, $product, 'Produk berhasil diupdate');
